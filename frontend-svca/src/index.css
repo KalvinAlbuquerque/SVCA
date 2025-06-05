@@ -1021,3 +1021,107 @@ a:hover {
         height: 80px;
     }
 }
+
+/*  PAGA SOBRE NÓS E POLÍTICAS DE USO */
+/* src/index.css */
+
+/* Estilos para PoliciesPage */
+.policies-page-container,
+.about-us-page-container {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+  flex-grow: 1;
+  background-color: var(--white);
+}
+
+.policies-page-box,
+.about-us-page-box {
+  max-width: 900px;
+  width: 95%;
+  padding: 40px;
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px var(--shadow-general);
+  text-align: left; /* Alinhar o texto à esquerda */
+}
+
+.policies-page-title,
+.about-us-page-title {
+  font-size: 2.5rem;
+  color: var(--text-dark);
+  margin-bottom: 30px;
+  font-weight: 700;
+}
+
+.policies-page-text,
+.about-us-page-text {
+  font-size: 1.1rem;
+  color: var(--text-medium);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.policies-section,
+.about-us-section {
+  margin-bottom: 30px;
+}
+
+.policies-section h2,
+.about-us-section h2 {
+  font-size: 1.8rem;
+  color: var(--primary-blue);
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.policies-section p,
+.about-us-section p {
+  font-size: 1rem;
+  color: var(--text-dark);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .policies-page-box,
+  .about-us-page-box {
+    padding: 30px 20px;
+  }
+  .policies-page-title,
+  .about-us-page-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .policies-page-box,
+  .about-us-page-box {
+    padding: 20px 15px;
+  }
+  .policies-page-title,
+  .about-us-page-title {
+    font-size: 1.8rem;
+  }
+}
+
+.about-us-image-container {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0; /* Espaço acima e abaixo da imagem */
+}
+
+.about-us-image {
+  max-width: 80%; /* Ajuste a largura máxima da imagem (80% do container) */
+  height: auto;
+  border-radius: 8px; /* Opcional: para arredondar as bordas */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Opcional: para adicionar uma leve sombra */
+}
+
+@media (max-width: 768px) {
+  .about-us-image-container {
+    margin: 20px 0;
+  }
+  .about-us-image {
+    max-width: 95%; /* Maior em telas menores */
+  }
+}

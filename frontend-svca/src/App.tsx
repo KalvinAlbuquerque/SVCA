@@ -7,7 +7,10 @@ import Dashboard from './components/Dashboard';
 import RegisterPage from './components/RegisterPage';
 import HomePage from './components/HomePage';
 import RegisterOccurrencePage from './components/RegisterOccurrencePage';
-import MyOccurrencesPage from './components/MyOccurrencesPage'; // Importe o novo componente
+import MyOccurrencesPage from './components/MyOccurrencesPage'; 
+import PoliciesPage from './components/PoliciesPage'; // Importe PoliciesPage
+import AboutUsPage from './components/AboutUsPage'; // Importe AboutUsPage
+
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -64,6 +67,8 @@ const App: React.FC = () => {
           path="/minhas-ocorrencias" // Nova rota para minhas ocorrências
           element={isAuthenticated ? <MyOccurrencesPage /> : <Navigate to="/login" replace />}
         />
+        <Route path="/politicas" element={<PoliciesPage />} /> {/* Nova rota para Políticas de Uso */}
+        <Route path="/sobre-nos" element={<AboutUsPage />} /> {/* Nova rota para Sobre Nós */}
         {/* Adicione outras rotas protegidas aqui */}
       </Routes>
     </Router>
