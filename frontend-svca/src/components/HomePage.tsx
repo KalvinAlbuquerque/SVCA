@@ -62,7 +62,8 @@ const HomePage: React.FC = () => {
               ))}
             </ul>
           )}
-          <button className="btn-secondary">Ver mais...</button>
+          {/* ALTERAÇÃO: Adicionar a classe "btn-secondary" diretamente ao componente Link */}
+          <Link to="/ranking-semanal" className="btn-secondary">Ver mais...</Link>
         </aside>
 
         <main className="main-map-area">
@@ -78,9 +79,9 @@ const HomePage: React.FC = () => {
 
       {/* Bloco de logo e slogan na parte inferior esquerda */}
       <div className="homepage-footer-logo">
-        <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" /> {/* Mudei para /logo.png */}
-        <p className="slogan">Vigilância Comunitária da Água</p> {/* Texto principal do logo */}
-        <p className="homepage-slogan-text">Promovendo o acesso a água limpa em comunidades</p> {/* Slogan inferior */}
+        <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" />
+        <p className="slogan">Vigilância Comunitária da Água</p>
+        <p className="homepage-slogan-text">Promovendo o acesso a água limpa em comunidades</p>
       </div>
     </div>
   );

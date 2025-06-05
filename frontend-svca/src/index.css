@@ -2523,3 +2523,67 @@ a:hover {
         font-size: 1rem;
     }
 }
+
+/* src/index.css */
+
+/* ... (seus estilos existentes) ... */
+
+.ranking-semanal-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ranking-semanal-container h1 {
+  margin-bottom: 20px;
+}
+
+.ranking-list {
+  list-style: none;
+  padding: 0;
+}
+
+.ranking-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.ranking-list li:last-child {
+  border-bottom: none;
+}
+
+.ranking-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+}
+
+.ranking-nome {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.ranking-pontos {
+  color: #888;
+}
+
+.voltar-link {
+  display: block;
+  margin-top: 20px;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.voltar-link:hover {
+  text-decoration: underline;
+}

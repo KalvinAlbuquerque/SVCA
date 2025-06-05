@@ -18,7 +18,7 @@ import OrganizationFormPage from './components/OrganizationFormPage';
 import ContactPage from './components/ContactPage';
 import ViewOccurrencePage from './components/ViewOccurrencePage';
 import ProfilePage from './components/ProfilePage'; // Importe a ProfilePage
-
+import RankingSemanal from './components/RankingSemanal';
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<string | null>(null);
@@ -129,6 +129,8 @@ const App: React.FC = () => {
         {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
              <Route path="/gerenciar-ocorrencias/:id" element={<Navigate to="/dashboard" replace />} />
         )}
+
+        <Route path="/ranking-semanal" element={<RankingSemanal />} /> {/* <--- NOVA ROTA */}
 
       </Routes>
     </Router>
