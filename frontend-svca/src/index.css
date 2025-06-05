@@ -1338,7 +1338,7 @@ a:hover {
 
 .dropdown-menu {
     position: absolute;
-    top: 100%; /* Posiciona o menu abaixo do "Meu menu" */
+    top: 100%;
     left: 0;
     background-color: var(--white);
     border: 1px solid var(--border-light);
@@ -1346,8 +1346,8 @@ a:hover {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     list-style: none;
     padding: 10px 0;
-    z-index: 1000; /* Garante que o menu esteja acima de outros elementos */
-    min-width: 200px; /* Largura mínima para o menu */
+    z-index: 9999; /* *** MUDANÇA AQUI: Aumentar o z-index *** */
+    min-width: 200px;
 }
 
 .dropdown-menu li {

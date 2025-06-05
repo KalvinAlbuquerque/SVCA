@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-cards">
         {/* Cards Comuns para todos os perfis */}
-        <div className="card" onClick={() => handleCardClick('/mapa')}>
+        <div className="card" onClick={() => handleCardClick('/mapa-ocorrencias')}> {/* *** MUDANÇA AQUI: Nova rota para o mapa *** */}
           <img src="/mapa.svg" alt="Mapa" className="card-icon" />
           <h3>Mapa</h3>
         </div>

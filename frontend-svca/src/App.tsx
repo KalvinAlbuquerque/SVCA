@@ -19,7 +19,7 @@ import ContactPage from './components/ContactPage';
 import ViewOccurrencePage from './components/ViewOccurrencePage';
 import ProfilePage from './components/ProfilePage'; // Importe a ProfilePage
 import RankingSemanal from './components/RankingSemanal';
-import MapComponent from './components/MapComponent'; // Você pode precisar disso mais tarde
+import MapPage from './components/MapPage'; // *** NOVO IMPORT ***
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -106,6 +106,13 @@ const App: React.FC = () => {
             <Route path="/gerenciar-orgaos/editar/:id" element={<OrganizationFormPage />} />
           </>
         ) : null}
+
+        {/* *** NOVA ROTA PARA O MAPA DE OCORRÊNCIAS *** */}
+        <Route
+          path="/mapa-ocorrencias"
+          element={isAuthenticated ? <MapPage /> : <Navigate to="/login" replace />}
+        />
+        {/* FIM DA NOVA ROTA */}
 
         {/* Rotas apenas para Administrador */}
         {userProfile === 'Administrador' ? (
