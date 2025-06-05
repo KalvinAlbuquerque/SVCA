@@ -1,5 +1,5 @@
 // frontend-svca/src/components/ManageUsersPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface User {
@@ -8,7 +8,7 @@ interface User {
   email: string;
   telefone: string;
   perfil: string;
-  perfil_id?: number; // Para poder enviar o ID ao atualizar
+  perfil_id?: number;
   pontos: number;
 }
 
@@ -28,14 +28,16 @@ const ManageUsersPage: React.FC = () => {
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmNewPassword, setConfirmNewPassword] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(''); // Novo estado para o termo com debounce
 
   const navigate = useNavigate();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async (term: string = '') => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/users', {
+      const response = await fetch(`http://localhost:5000/users${term ? `?search=${encodeURIComponent(term)}` : ''}`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -57,17 +59,17 @@ const ManageUsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   const fetchProfileOptions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/perfis', { // Você precisará criar esta rota no backend!
+      const response = await fetch('http://localhost:5000/perfis', {
         method: 'GET',
         credentials: 'include',
       });
       if (response.ok) {
         const data: ProfileOption[] = await response.json();
-        setProfileOptions(data); // Alterado de setProfileOptions para setStatusOptions, corrigir para ProfileOptions
+        setProfileOptions(data);
       } else {
         console.error('Falha ao carregar opções de perfil.');
       }
@@ -76,10 +78,30 @@ const ManageUsersPage: React.FC = () => {
     }
   };
 
+  // Efeito para aplicar o debounce ao searchTerm
   useEffect(() => {
-    fetchUsers();
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Atraso de 500ms (você pode ajustar)
+
+    // Limpa o timeout anterior se o searchTerm mudar antes do tempo
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Efeito para buscar usuários quando o debouncedSearchTerm muda
+  useEffect(() => {
+    fetchUsers(debouncedSearchTerm);
     fetchProfileOptions();
-  }, [navigate]);
+  }, [fetchUsers, debouncedSearchTerm]); // Agora depende de debouncedSearchTerm
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Ao clicar no botão, a busca é imediata, sem debounce
+    fetchUsers(searchTerm);
+    setDebouncedSearchTerm(searchTerm); // Garante que o debounced state esteja alinhado
+  };
 
   const openModal = (user: User) => {
     setSelectedUser(user);
@@ -138,7 +160,7 @@ const ManageUsersPage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Usuário atualizado com sucesso!' });
-        fetchUsers(); // Atualiza a lista de usuários
+        fetchUsers(debouncedSearchTerm); // Usa o termo debounced para re-pesquisar
         setTimeout(() => closeModal(), 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao atualizar usuário.' });
@@ -149,14 +171,14 @@ const ManageUsersPage: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userToDelete: User) => { // <--- MODIFICAÇÃO AQUI: aceita um argumento `userToDelete`
+  const handleDeleteUser = async (userToDelete: User) => {
     if (!window.confirm(`Tem certeza que deseja deletar o usuário "${userToDelete.nome}"?`)) {
         return;
     }
 
     setMessage(null);
     try {
-      const response = await fetch(`http://localhost:5000/user/${userToDelete.id}`, { // <--- MODIFICAÇÃO AQUI: usa userToDelete.id
+      const response = await fetch(`http://localhost:5000/user/${userToDelete.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -164,7 +186,7 @@ const ManageUsersPage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Usuário deletado com sucesso!' });
-        fetchUsers(); // Atualiza a lista de usuários
+        fetchUsers(debouncedSearchTerm); // Usa o termo debounced para re-pesquisar
         setTimeout(() => closeModal(), 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao deletar usuário.' });
@@ -194,7 +216,21 @@ const ManageUsersPage: React.FC = () => {
   return (
     <main className="manage-page-container">
       <div className="manage-box">
-        <h1 className="manage-title">Gerenciar Usuários</h1>
+        <h1 className="manage-title">Pesquisar Usuário</h1>
+
+        <form className="search-form" onSubmit={handleSearch}>
+          <div className="form-group search-group">
+            <label htmlFor="search-user-profile">Perfil do Usuário</label>
+            <input
+              type="text"
+              id="search-user-profile"
+              placeholder="Pesquisar por nome ou e-mail..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button type="submit" className="btn-primary search-button">Pesquisar</button>
+          </div>
+        </form>
 
         {users.length === 0 && (
           <p className="no-items-message">Nenhum usuário encontrado.</p>
@@ -211,7 +247,7 @@ const ManageUsersPage: React.FC = () => {
                 <p>Pontos: {user.pontos}</p>
                 <div className="item-actions">
                   <button className="btn-edit" onClick={() => openModal(user)}>Editar</button>
-                  <button className="btn-delete" onClick={() => handleDeleteUser(user)}>Excluir</button> {/* <--- CHAMADA CORRIGIDA AQUI */}
+                  <button className="btn-delete" onClick={() => handleDeleteUser(user)}>Excluir</button>
                 </div>
               </div>
             ))}

@@ -1854,3 +1854,68 @@ a:hover {
         padding: 10px 15px;
     }
 }
+
+/* Estilos para o formulário de pesquisa em ManageUsersPage */
+.search-form {
+    display: flex;
+    justify-content: flex-start; /* Alinhar à esquerda como na imagem */
+    align-items: flex-end; /* Alinha o botão com o input */
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light); /* Linha abaixo do formulário */
+}
+
+.search-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1; /* Permite que o grupo cresça */
+    max-width: 400px; /* Largura máxima para o input */
+}
+
+.search-group label {
+    font-weight: 700; /* Negrito como na imagem */
+    font-size: 20px;
+    line-height: 24px;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+.search-group input[type="text"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-light);
+    border-radius: 11px; /* Arredondamento como nos outros inputs */
+    box-shadow: var(--shadow-input); /* Sombra como nos outros inputs */
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-family: var(--font-primary);
+}
+
+.search-button {
+    padding: 12px 25px;
+    border-radius: 17px; /* Arredondamento como os botões de header */
+    font-size: 20px; /* Tamanho da fonte do botão */
+    font-weight: 600;
+    width: auto; /* Ajusta largura ao conteúdo */
+    height: 45px; /* Altura para alinhar com o input */
+    display: flex; /* Para centralizar o texto */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Responsividade para o formulário de pesquisa */
+@media (max-width: 768px) {
+    .search-form {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .search-group {
+        max-width: 100%; /* Ocupa largura total */
+    }
+    .search-button {
+        width: 100%; /* Botão ocupa toda a largura */
+    }
+}

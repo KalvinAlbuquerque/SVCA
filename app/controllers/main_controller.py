@@ -9,7 +9,7 @@ from ..models.coordenada import Coordenada
 from ..models.imagem import Imagem
 from ..models.perfil import Perfil
 from ..models.tipo_pontuacao import TipoPontuacao
-from ..models.orgao_responsavel import OrgaoResponsavel # Importar OrgaoResponsavel
+from ..models.orgao_responsavel import OrgaoResponsavel
 from .. import db
 from ..decorators import login_required, roles_required # Importar os decoradores
 
@@ -361,7 +361,17 @@ def get_all_users():
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
 
-    users = Usuario.query.all()
+    search_term = request.args.get('search', '').strip() # Pega o termo de busca da query string
+    users_query = Usuario.query
+
+    if search_term:
+        # Filtra por nome ou email (case-insensitive)
+        users_query = users_query.filter(db.or_(
+            Usuario.nome.ilike(f'%{search_term}%'),
+            Usuario.email.ilike(f'%{search_term}%')
+        ))
+
+    users = users_query.all()
     users_data = []
     for user in users:
         users_data.append({
@@ -428,7 +438,7 @@ def manage_user(user_id):
             return jsonify({'error': f'Erro ao deletar usuário: {str(e)}'}), 500
 
 @main_bp.route('/orgaos-responsaveis', methods=['GET', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas Administrador pode gerenciar órgãos
+@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
 def get_all_orgaos():
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
@@ -445,7 +455,7 @@ def get_all_orgaos():
     return jsonify(orgaos_data), 200
 
 @main_bp.route('/orgao-responsavel', methods=['POST', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas Administrador pode criar órgãos
+@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
 def create_orgao():
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
@@ -472,7 +482,7 @@ def create_orgao():
         return jsonify({'error': f'Erro ao criar órgão responsável: {str(e)}'}), 500
 
 @main_bp.route('/orgao-responsavel/<int:orgao_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas Administrador pode gerenciar órgãos
+@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
 def manage_orgao(orgao_id):
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
@@ -505,7 +515,7 @@ def manage_orgao(orgao_id):
             return jsonify({'message': 'Órgão responsável atualizado com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': f'Erro ao atualizar órgão responsável: {str(e)}'}), 500
+            return jsonify({'error': f'Ocorreu um erro ao atualizar o órgão responsável: {str(e)}'}), 500
 
     elif request.method == 'DELETE':
         try:
@@ -515,9 +525,10 @@ def manage_orgao(orgao_id):
         except Exception as e:
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar órgão responsável: {str(e)}'}), 500
-        
+
+# Adicione estas rotas para buscar status e perfis
 @main_bp.route('/status-ocorrencias', methods=['GET', 'OPTIONS'])
-@login_required # Pode ser acessado por qualquer usuário logado para carregar opções
+@login_required 
 def get_status_options():
     if request.method == 'OPTIONS':
         return '', 200
@@ -526,7 +537,7 @@ def get_status_options():
     return jsonify([{'id': s.id, 'nome': s.nome} for s in status_list]), 200
 
 @main_bp.route('/perfis', methods=['GET', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas administradores podem ver os perfis (para o dropdown de gerenciamento de usuários)
+@roles_required(['Administrador'])
 def get_profile_options():
     if request.method == 'OPTIONS':
         return '', 200

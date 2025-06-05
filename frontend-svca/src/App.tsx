@@ -17,15 +17,15 @@ import ManageOrganizationsPage from './components/ManageOrganizationsPage'; // N
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [userProfile, setUserProfile] = useState<string | null>(null); // Novo estado para o perfil do usuário
+  const [userProfile, setUserProfile] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
-    const storedUserProfile = localStorage.getItem('userProfile'); // Obtém o perfil do localStorage
+    const storedUserProfile = localStorage.getItem('userProfile');
 
     if (userId) {
       setIsAuthenticated(true);
-      setUserProfile(storedUserProfile); // Define o perfil
+      setUserProfile(storedUserProfile);
     } else {
       setIsAuthenticated(false);
       setUserProfile(null);
@@ -34,7 +34,7 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
-    setUserProfile(localStorage.getItem('userProfile')); // Atualiza o perfil após o login
+    setUserProfile(localStorage.getItem('userProfile'));
   };
 
   const handleLogout = async () => {
@@ -46,9 +46,9 @@ const App: React.FC = () => {
       if (response.ok) {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
-        localStorage.removeItem('userProfile'); // Remove o perfil no logout
+        localStorage.removeItem('userProfile');
         setIsAuthenticated(false);
-        setUserProfile(null); // Limpa o perfil
+        setUserProfile(null);
       } else {
         console.error('Erro ao fazer logout no servidor.');
       }
@@ -59,7 +59,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <Header isAuthenticated={isAuthenticated} userProfile={userProfile} onLogout={handleLogout} /> {/* Passa userProfile para o Header */}
+      <Header isAuthenticated={isAuthenticated} userProfile={userProfile} onLogout={handleLogout} />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginBox onLoginSuccess={handleLoginSuccess} />} />
@@ -90,22 +90,27 @@ const App: React.FC = () => {
           <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
         ) : null}
 
+        {/* Ajuste aqui se Moderador também puder gerenciar órgãos */}
+        {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
+             <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
+        ) : null}
+
         {userProfile === 'Administrador' ? (
           <>
             <Route path="/gerenciar-usuarios" element={<ManageUsersPage />} />
-            <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
           </>
         ) : null}
+
 
         {/* Redirecionar para o dashboard caso tente acessar rotas restritas sem permissão */}
         {isAuthenticated && userProfile === 'Usuario' && (
              <Route path="/gerenciar-ocorrencias" element={<Navigate to="/dashboard" replace />} />
         )}
-        {isAuthenticated && userProfile !== 'Administrador' && (
-             <Route path="/gerenciar-usuarios" element={<Navigate to="/dashboard" replace />} />
+        {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
+             <Route path="/gerenciar-orgaos" element={<Navigate to="/dashboard" replace />} />
         )}
         {isAuthenticated && userProfile !== 'Administrador' && (
-             <Route path="/gerenciar-orgaos" element={<Navigate to="/dashboard" replace />} />
+             <Route path="/gerenciar-usuarios" element={<Navigate to="/dashboard" replace />} />
         )}
 
       </Routes>
