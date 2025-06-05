@@ -1,3 +1,18 @@
+/* src/index.css */
+
+/* Definição de Variáveis CSS para Cores */
+:root {
+    --primary-blue: #3B82F6;
+    --dark-blue: #2563EB;
+    --text-dark: #2c3e50;
+    --text-medium: #666;
+    --text-light: #555;
+    --border-light: #ccc;
+    --white: #FFFFFF;
+    --shadow-light: rgba(0,0,0,0.1);
+    --shadow-medium: rgba(0,0,0,0.1);
+}
+
 /* Reset CSS Básico */
 * {
     margin: 0;
@@ -7,27 +22,27 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background-color: #FFFFFF; /* OU white; OU #fff; */
+    background-color: var(--white);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    color: white
+    color: var(--text-dark); /* Ajustado para uma cor legível no corpo */
 }
 
 a {
     text-decoration: none;
-    color: #3B82F6;
+    color: var(--primary-blue);
 }
 
 a:hover {
     text-decoration: underline;
 }
 
-/* Cabeçalho */
+/* Estilos do Cabeçalho */
 .main-header {
-    background-color: #fff;
+    background-color: var(--white);
     padding: 15px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px var(--shadow-light);
     width: 100%;
 }
 
@@ -40,25 +55,25 @@ a:hover {
 .nav-list {
     list-style: none;
     display: flex;
-    justify-content: flex-start; /* Alinha os itens à esquerda */
-    gap: 30px; /* Espaço entre os itens do menu */
+    justify-content: flex-start;
+    gap: 30px;
 }
 
 .nav-item a {
-    color: #333;
+    color: var(--text-light); /* Ajustado para #333 que é mais escuro */
     font-weight: 500;
     font-size: 1rem;
     transition: color 0.3s ease;
 }
 
 .nav-item a:hover {
-    color: #3B82F6;
+    color: var(--primary-blue);
     text-decoration: none;
 }
 
-/* Conteúdo Principal de Login */
+/* Estilos do Contêiner de Login */
 .login-container {
-    flex-grow: 1; /* Faz o contêiner de login ocupar o espaço restante */
+    flex-grow: 1;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -66,47 +81,42 @@ a:hover {
 }
 
 .login-box {
-    /* background-color: #fff; REMOVA OU COMENTE */
-    /* padding: 40px; REMOVA OU COMENTE */
-    /* border-radius: 8px; REMOVA OU COMENTE */
-    /* box-shadow: 0 4px 10px rgba(0,0,0,0.1); REMOVA OU COMENTE */
     text-align: center;
-    max-width: 400px; /* Mantenha isso para controlar a largura do conteúdo */
-    width: 100%;     /* Mantenha isso */
+    max-width: 400px;
+    width: 100%;
 }
 
 .logo-area {
     margin-bottom: 20px;
 }
 
-/* Estilo para a imagem do logo */
 .app-logo {
-    width: 300px; /* Tamanho inicial, ajuste conforme necessário */
-    height: auto; /* Mantém a proporção */
-    max-width: 100%; /* Garante que não ultrapasse o contêiner */
-    display: block; /* Garante que a imagem se comporte como um bloco para centralização */
-    margin: 0 auto; /* Centraliza a imagem se ela for menor que o contêiner */
+    width: 300px;
+    height: auto;
+    max-width: 100%;
+    display: block;
+    margin: 0 auto;
 }
 
 .app-title {
     font-size: 1.8rem;
-    color: #2c3e50;
+    color: var(--text-dark);
     margin-bottom: 10px;
 }
 
 .slogan {
     font-size: 1rem;
-    color: #666;
+    color: var(--text-medium);
     margin-bottom: 30px;
     line-height: 1.4;
 }
 
-/* Formulário de Login */
+/* Estilos do Formulário de Login */
 .login-form {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 0 20px; /* Adiciona um padding horizontal, ajuste conforme necessário */
+    padding: 0 20px;
 }
 
 .form-group {
@@ -116,7 +126,7 @@ a:hover {
 .form-group label {
     display: block;
     font-size: 0.9rem;
-    color: #555;
+    color: var(--text-light);
     margin-bottom: 5px;
     font-weight: 500;
 }
@@ -125,16 +135,16 @@ a:hover {
 .form-group input[type="password"] {
     width: 100%;
     padding: 12px 15px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-light);
     border-radius: 5px;
     font-size: 1rem;
-    color: #333;
+    color: var(--text-dark);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-group input[type="email"]:focus,
 .form-group input[type="password"]:focus {
-    border-color: #3B82F6;
+    border-color: var(--primary-blue);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
     outline: none;
 }
@@ -142,13 +152,13 @@ a:hover {
 .forgot-password {
     text-align: right;
     font-size: 0.9rem;
-    color: #3B82F6;
-    margin-top: -10px; /* Ajusta a posição para mais perto do input */
+    color: var(--primary-blue);
+    margin-top: -10px;
 }
 
 .btn-primary {
-    background-color: #3B82F6;
-    color: #fff;
+    background-color: var(--primary-blue);
+    color: var(--white);
     padding: 12px 25px;
     border: none;
     border-radius: 5px;
@@ -156,11 +166,11 @@ a:hover {
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%; /* Botão ocupa 100% da largura */
+    width: 100%;
 }
 
 .btn-primary:hover {
-    background-color: #2563EB;
+    background-color: var(--dark-blue);
     transform: translateY(-2px);
 }
 
@@ -176,7 +186,7 @@ a:hover {
     .nav-list {
         gap: 15px;
         justify-content: center;
-        flex-wrap: wrap; /* Permite quebrar linha em telas pequenas */
+        flex-wrap: wrap;
     }
     .login-box {
         padding: 30px 20px;
@@ -191,7 +201,7 @@ a:hover {
 
 @media (max-width: 400px) {
     .login-box {
-        margin: 0 10px; /* Pequena margem nas laterais em telas muito pequenas */
+        margin: 0 10px;
     }
     .nav-item a {
         font-size: 0.9rem;
