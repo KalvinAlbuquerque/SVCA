@@ -3,6 +3,8 @@ import os
 import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session, url_for
+
+from app.models.notificacao import Notificacao
 from ..models.usuario import Usuario
 from ..models.ocorrencia import Ocorrencia, StatusOcorrencia
 from ..models.coordenada import Coordenada # Adicione Coordenada
@@ -288,6 +290,16 @@ def view_occurrence_public(occurrence_id):
         latitude = occurrence.coordenada.latitude
         longitude = occurrence.coordenada.longitude
 
+    # Obter histórico de notificações
+    historico_notificacoes = []
+    for notificacao in occurrence.historico_notificacoes:
+        historico_notificacoes.append({
+            'mensagem': notificacao.mensagem,
+            'data_envio': notificacao.data_envio, # Assumindo que data_envio já está formatada como string
+            'email_destino': notificacao.email_destino
+        })
+    historico_notificacoes.sort(key=lambda x: x['data_envio'], reverse=True) # Ordena por data mais recente
+
     return jsonify({
         'id': occurrence.id,
         'titulo': occurrence.titulo,
@@ -305,7 +317,9 @@ def view_occurrence_public(occurrence_id):
         'imagens': images_urls,
         'latitude': latitude,
         'longitude': longitude,
+        'historico_notificacoes': historico_notificacoes, # *** NOVO CAMPO ***
     }), 200
+
 
 
 # --- ROTAS PARA MODERADOR E ADMINISTRADOR ---
@@ -411,7 +425,7 @@ def manage_occurrence(occurrence_id):
             db.session.commit()
             
              # *** Lógica de Envio de E-mail para Órgão Responsável (MUDANÇA AQUI) ***
-            if occurrence.orgao_responsavel_id and occurrence.orgao_responsavel_id != old_orgao_id:
+            """ if occurrence.orgao_responsavel_id and occurrence.orgao_responsavel_id != old_orgao_id:
                 # Apenas envia e-mail se um órgão foi recém-atribuído ou mudou
                 orgao = OrgaoResponsavel.query.get(occurrence.orgao_responsavel_id)
                 if orgao and orgao.email:
@@ -437,7 +451,7 @@ def manage_occurrence(occurrence_id):
                     except Exception as mail_e:
                         print(f"ERRO ao enviar e-mail para {orgao.email}: {mail_e}")
                         # Não retornamos erro HTTP 500 se o e-mail falhar, apenas logamos.
-                        # A atualização da ocorrência já foi comitada.
+                        # A atualização da ocorrência já foi comitada. """
             
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
         except Exception as e:
@@ -687,3 +701,55 @@ def get_active_occurrences():
     except Exception as e:
         print(f"Erro ao buscar ocorrências ativas: {e}")
         return jsonify({'error': f'Ocorreu um erro ao carregar as ocorrências ativas: {str(e)}'}), 500
+    
+@main_bp.route('/occurrence/<int:occurrence_id>/send-notification', methods=['POST'])
+@roles_required(['Administrador', 'Moderador'])
+def send_notification_to_orgao(occurrence_id):
+    occurrence = Ocorrencia.query.get(occurrence_id)
+    if not occurrence:
+        return jsonify({'error': 'Ocorrência não encontrada.'}), 404
+
+    if not occurrence.orgao_responsavel_id:
+        return jsonify({'error': 'Esta ocorrência não possui um Órgão Responsável atribuído para envio de notificação.'}), 400
+    
+    orgao = OrgaoResponsavel.query.get(occurrence.orgao_responsavel_id)
+    if not orgao or not orgao.email:
+        return jsonify({'error': 'Órgão Responsável não encontrado ou sem e-mail para notificação.'}), 400
+
+    try:
+        # 1. Enviar E-mail
+        msg_body = (
+            f"Prezado(a) {orgao.nome},\n\n"
+            f"Uma ocorrência foi encaminhada/atualizada para a sua organização:\n\n"
+            f"Título: {occurrence.titulo}\n"
+            f"Descrição: {occurrence.descricao}\n"
+            f"Endereço: {occurrence.endereco}\n"
+            f"Status: {occurrence.status_ocorrencia.nome}\n"
+            f"Registrada por: {occurrence.usuario.nome}\n"
+            f"Data de Registro: {occurrence.data_registro.strftime('%d/%m/%Y')}\n\n"
+            f"Para mais detalhes, acesse o sistema.\n\n"
+            f"Atenciosamente,\nSua equipe SVCA"
+        )
+        msg = Message(
+            f"Notificação de Ocorrência: {occurrence.titulo}",
+            recipients=[orgao.email],
+            body=msg_body
+        )
+        mail.send(msg)
+
+        # 2. Registrar no Histórico de Notificações
+        new_notification = Notificacao(
+            mensagem="Notificação enviada ao Órgão Responsável.",
+            data_envio=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), # Formato para string
+            email_destino=orgao.email,
+            ocorrencia_id=occurrence.id
+        )
+        db.session.add(new_notification)
+        db.session.commit() # Comita o registro da notificação
+
+        return jsonify({'message': 'Notificação enviada com sucesso e registrada no histórico!'}), 200
+
+    except Exception as e:
+        db.session.rollback() # Em caso de erro, desfaz apenas o registro da notificação (se houver)
+        print(f"ERRO ao enviar notificação para {orgao.email} ou registrar histórico: {e}")
+        return jsonify({'error': f'Erro ao enviar notificação ou registrar histórico: {str(e)}'}), 500
