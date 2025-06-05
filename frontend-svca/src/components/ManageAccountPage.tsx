@@ -18,23 +18,19 @@ interface UserProfile {
 
 const avatarOptions = [
   '/avatar.svg',
-  '/undraw_female-avatar_7t6k.png',
-  '/undraw_male-avatar_zkzx.png',
-  '/undraw_hacker-mind_j91b.png',
-  '/undraw_listening-to-podcasts_j0hm.png',
-  // Adicione mais avatares aqui, e certifique-se de que estão na pasta public
-  '/avatar_option_1.svg',
-  '/avatar_option_2.svg',
-  '/avatar_option_3.svg',
-  '/avatar_option_4.svg',
-  '/avatar_option_5.svg',
-  '/avatar_option_6.svg',
-  '/avatar_option_7.svg',
-  '/avatar_option_8.svg',
-  '/avatar_option_9.svg',
-  '/avatar_option_10.svg',
-  '/avatar_option_11.svg',
-  '/avatar_option_12.svg',
+  '/avatar2.svg', // Este
+  '/avatar3.svg', // Este
+  '/avatar4.svg', // Este
+  '/avatar5.svg', // Este
+  '/avatar6.svg',
+  '/avatar7.svg',
+  '/avatar8.svg',
+  '/avatar9.svg',
+  '/avatar10.svg',
+  '/avatar11.svg',
+  '/avatar12.svg',
+  '/avatar13.svg',
+  '/avatar14.svg',
 ];
 
 const ManageAccountPage: React.FC = () => {
@@ -69,7 +65,9 @@ const ManageAccountPage: React.FC = () => {
 
         const data: UserProfile = await response.json();
         setProfile(data);
-        setSelectedAvatar(data.avatar_url || avatarOptions[0]); // Define o avatar atual ou o primeiro da lista
+        // Define o avatar selecionado com base no avatar_url do backend, ou o primeiro da lista se não houver
+        // Ou, se o avatar_url do backend não estiver na sua lista de avatarOptions, define um padrão.
+        setSelectedAvatar(data.avatar_url && avatarOptions.includes(data.avatar_url) ? data.avatar_url : avatarOptions[0]);
       } catch (err: any) {
         console.error("Erro ao carregar perfil:", err);
         setError(err.message || 'Ocorreu um erro ao carregar seu perfil.');
@@ -120,7 +118,7 @@ const ManageAccountPage: React.FC = () => {
         telefone: profile.telefone,
         cpf: profile.cpf,
         apelido: profile.apelido, // Enviando o apelido de volta
-        // avatar_url: selectedAvatar, // Se tiver campo de avatar no modelo
+        avatar_url: selectedAvatar, // Envia o avatar selecionado para o backend
       };
 
       if (newPassword) {
@@ -149,6 +147,8 @@ const ManageAccountPage: React.FC = () => {
         } else {
             localStorage.setItem('userName', profile.nome);
         }
+        // Opcional: Recarregar o perfil após a atualização para refletir o avatar salvo
+        // fetchProfile(); // Isso poderia ser chamado para buscar os dados mais recentes do perfil
       } else {
         setMessage({ type: 'error', text: responseData.error || 'Erro ao atualizar perfil.' });
       }

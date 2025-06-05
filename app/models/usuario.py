@@ -1,3 +1,4 @@
+# SVCA/app/models/usuario.py
 # Importa a instância 'db' do arquivo principal 'run.py'
 from .. import db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,8 +13,9 @@ class Usuario(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     telefone = db.Column(db.String(255))
-    senha = db.Column(db.String(255), nullable=False) # <--- MUDANÇA AQUI (tamanho do campo)
+    senha = db.Column(db.String(255), nullable=False)
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=False)
+    avatar_url = db.Column(db.String(255), default='/avatar.svg') # <--- GARANTA QUE ESTA LINHA EXISTE E ESTÁ CORRETA
 
     #Relationship
     ocorrencias = db.relationship('Ocorrencia', backref='usuario', lazy=True)
@@ -36,19 +38,20 @@ class Usuario(db.Model):
         db.session.commit()
 
     @classmethod
-    def criar(cls, nome, email, telefone, senha_plana, perfil_id): # <--- MUDANÇA AQUI (senha_plana)
+    def criar(cls, nome, email, telefone, senha_plana, perfil_id):
         """
         Cria um novo usuário e o salva no banco de dados, hasheando a senha.
         """
         # Hasheia a senha antes de criar o usuário
-        senha_hash = generate_password_hash(senha_plana) # <--- MUDANÇA AQUI
+        senha_hash = generate_password_hash(senha_plana)
 
         novo_usuario = cls(
             nome=nome,
             email=email,
             telefone=telefone,
-            senha=senha_hash, # <-- Salva a senha hashada aqui
+            senha=senha_hash,
             perfil_id=perfil_id
+            # Não é necessário definir avatar_url aqui, o default já cuida
         )
         db.session.add(novo_usuario)
         db.session.commit()

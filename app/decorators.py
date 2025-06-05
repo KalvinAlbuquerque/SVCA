@@ -1,3 +1,4 @@
+# app/decorators.py
 from flask import session, jsonify, redirect, url_for, request
 from functools import wraps
 from .models.perfil import Perfil
@@ -8,6 +9,7 @@ def login_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Removido: if request.method == 'OPTIONS': return f(*args, **kwargs)
         if 'user_id' not in session:
             return jsonify({'error': 'Não autorizado. Faça login para acessar esta funcionalidade.'}), 401
         return f(*args, **kwargs)

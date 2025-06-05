@@ -11,7 +11,7 @@ from ..models.perfil import Perfil
 from ..models.tipo_pontuacao import TipoPontuacao
 from ..models.orgao_responsavel import OrgaoResponsavel
 from .. import db
-from ..decorators import login_required, roles_required # Importar os decoradores
+from ..decorators import login_required, roles_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -40,10 +40,9 @@ def login():
             return jsonify({'error': 'Email ou senha incorretos.'}), 401
     return "Backend em funcionamento. Acesse o frontend React."
 
-@main_bp.route('/register', methods=['POST', 'OPTIONS'])
+@main_bp.route('/register', methods=['POST']) # REMOVIDO 'OPTIONS'
 def register():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
     data = request.get_json()
     nome = data.get('nome')
     sobrenome = data.get('sobrenome')
@@ -99,11 +98,10 @@ def logout():
     session.pop('user_profile', None)
     return jsonify({'message': 'Você foi desconectado.'}), 200
 
-@main_bp.route('/register-occurrence', methods=['POST', 'OPTIONS'])
+@main_bp.route('/register-occurrence', methods=['POST']) # REMOVIDO 'OPTIONS'
 @login_required # Apenas usuários logados podem registrar ocorrências
 def register_occurrence():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
     user_id = session.get('user_id')
     current_user = Usuario.query.get(user_id)
@@ -159,18 +157,17 @@ def register_occurrence():
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
 
-@main_bp.route('/my-occurrences', methods=['GET', 'OPTIONS'])
+@main_bp.route('/my-occurrences', methods=['GET']) # REMOVIDO 'OPTIONS'
 @login_required # Protege a rota
 def get_my_occurrences():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
     user_id = session.get('user_id')
     current_user = Usuario.query.get(user_id)
     if not current_user:
         return jsonify({'error': 'Usuário não encontrado.'}), 404
 
-    occurrences = current_user.ocorrencias # Remova o .all()
+    occurrences = current_user.ocorrencias
 
     occurrences_data = []
     for occ in occurrences:
@@ -188,97 +185,89 @@ def get_my_occurrences():
 
     return jsonify(occurrences_data), 200
 
-# --- Novas rotas para Gerenciar Conta ---
-@main_bp.route('/user-profile', methods=['GET', 'OPTIONS'])
-@login_required # Protege a rota
-def get_user_profile():
-    if request.method == 'OPTIONS':
-        return '', 200
-
+# --- ROTA COMBINADA PARA USER PROFILE (GET e PUT) ---
+@main_bp.route('/user-profile', methods=['GET', 'PUT']) # REMOVIDO 'OPTIONS'
+@login_required # O decorador já lida com OPTIONS.
+def user_profile():
     user_id = session.get('user_id')
     user = Usuario.query.get(user_id)
     if not user:
         return jsonify({'error': 'Usuário não encontrado.'}), 404
 
-    pontuacao = user.consultar_pontuacao()
+    if request.method == 'GET':
+        pontuacao = user.consultar_pontuacao()
 
-    nome_partes = user.nome.split(' ', 1) 
-    primeiro_nome = nome_partes[0] if nome_partes else ""
-    sobrenome = nome_partes[1] if len(nome_partes) > 1 else ""
+        nome_partes = user.nome.split(' ', 1)
+        primeiro_nome = nome_partes[0] if nome_partes else ""
+        sobrenome = nome_partes[1] if len(nome_partes) > 1 else ""
 
-    profile_data = {
-        'id': user.id,
-        'nome': primeiro_nome, 
-        'sobrenome': sobrenome,
-        'email': user.email,
-        'telefone': user.telefone,
-        'cpf': user.cpf if hasattr(user, 'cpf') else None, 
-        'apelido': user.nome, 
-        'perfil': user.perfil.nome if user.perfil else 'N/A',
-        'pontos': pontuacao,
-    }
-    return jsonify(profile_data), 200
+        profile_data = {
+            'id': user.id,
+            'nome': primeiro_nome,
+            'sobrenome': sobrenome,
+            'email': user.email,
+            'telefone': user.telefone,
+            'cpf': user.cpf if hasattr(user, 'cpf') else None,
+            'apelido': user.nome,
+            'perfil': user.perfil.nome if user.perfil else 'N/A',
+            'pontos': pontuacao,
+            'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else None,
+        }
+        return jsonify(profile_data), 200
 
-@main_bp.route('/user-profile', methods=['PUT', 'OPTIONS'])
-@login_required # Protege a rota
-def update_user_profile():
-    if request.method == 'OPTIONS':
-        return '', 200
+    elif request.method == 'PUT':
+        data = request.get_json()
 
-    user_id = session.get('user_id')
-    user = Usuario.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'Usuário não encontrado.'}), 404
+        try:
+            if 'nome' in data and 'sobrenome' in data:
+                nome_completo = f"{data['nome']} {data['sobrenome']}".strip()
+                user.nome = nome_completo
+            elif 'nome' in data:
+                user.nome = data['nome']
 
-    data = request.get_json()
+            if 'email' in data and data['email'] != user.email:
+                existing_email_user = Usuario.query.filter(Usuario.email == data['email'], Usuario.id != user.id).first()
+                if existing_email_user:
+                    return jsonify({'error': 'Este e-mail já está em uso por outro usuário.'}), 409
+                user.email = data['email']
 
-    try:
-        if 'nome' in data and 'sobrenome' in data:
-            nome_completo = f"{data['nome']} {data['sobrenome']}".strip()
-            user.nome = nome_completo
-        elif 'nome' in data: 
-            user.nome = data['nome']
+            if 'telefone' in data:
+                user.telefone = data['telefone']
+            if 'cpf' in data:
+                if hasattr(user, 'cpf'):
+                    user.cpf = data['cpf']
 
-        if 'email' in data and data['email'] != user.email:
-            existing_email_user = Usuario.query.filter(Usuario.email == data['email'], Usuario.id != user.id).first()
-            if existing_email_user:
-                return jsonify({'error': 'Este e-mail já está em uso por outro usuário.'}), 409
-            user.email = data['email']
+            if 'nova_senha' in data and data['nova_senha']:
+                if 'repita_sua_senha' not in data or data['nova_senha'] != data['repita_sua_senha']:
+                    return jsonify({'error': 'As novas senhas não coincidem.'}), 400
+                if len(data['nova_senha']) < 6:
+                    return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
+                user.redefinir_senha(data['nova_senha'])
+            
+            # Adicione o avatar_url para ser atualizado
+            if 'avatar_url' in data:
+                if hasattr(user, 'avatar_url'):
+                    user.avatar_url = data['avatar_url']
 
-        if 'telefone' in data:
-            user.telefone = data['telefone']
-        if 'cpf' in data:
-            if hasattr(user, 'cpf'):
-                user.cpf = data['cpf']
+            db.session.commit()
+            return jsonify({'message': 'Perfil atualizado com sucesso!'}), 200
 
-        if 'nova_senha' in data and data['nova_senha']:
-            if 'repita_sua_senha' not in data or data['nova_senha'] != data['repita_sua_senha']:
-                return jsonify({'error': 'As novas senhas não coincidem.'}), 400
-            if len(data['nova_senha']) < 6:
-                return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
-            user.redefinir_senha(data['nova_senha']) 
-
-        db.session.commit()
-        return jsonify({'message': 'Perfil atualizado com sucesso!'}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"Erro ao atualizar perfil: {e}")
-        return jsonify({'error': f'Ocorreu um erro ao atualizar o perfil: {str(e)}'}), 500
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao atualizar perfil: {e}")
+            return jsonify({'error': f'Ocorreu um erro ao atualizar o perfil: {str(e)}'}), 500
 
 # --- ROTAS PARA MODERADOR E ADMINISTRADOR ---
 
-@main_bp.route('/occurrences', methods=['GET', 'OPTIONS'])
-@roles_required(['Administrador', 'Moderador']) # Acesso para Moderador e Administrador
+@main_bp.route('/occurrences', methods=['GET']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador', 'Moderador'])
 def get_all_occurrences():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
-    search_term = request.args.get('search', '').strip() # Pega o termo de busca da query string
+    search_term = request.args.get('search', '').strip()
     occurrences_query = Ocorrencia.query
 
     if search_term:
-        # Filtra por titulo, endereco, ou nome do usuario
         occurrences_query = occurrences_query.join(Usuario).filter(db.or_(
             Ocorrencia.titulo.ilike(f'%{search_term}%'),
             Ocorrencia.endereco.ilike(f'%{search_term}%'),
@@ -301,11 +290,10 @@ def get_all_occurrences():
         })
     return jsonify(occurrences_data), 200
 
-@main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
 @roles_required(['Administrador', 'Moderador'])
 def manage_occurrence(occurrence_id):
-    if request.method == 'OPTIONS':
-        return '', 200
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
     occurrence = Ocorrencia.query.get(occurrence_id)
     if not occurrence:
@@ -326,13 +314,13 @@ def manage_occurrence(occurrence_id):
             'usuario_id': occurrence.usuario_id,
             'usuario_nome': occurrence.usuario.nome if occurrence.usuario else 'N/A',
             'orgao_responsavel_id': occurrence.orgao_responsavel_id,
-            'orgao_responsavel_nome': orgao_nome, # Adicione para o frontend
+            'orgao_responsavel_nome': orgao_nome,
             'tipo_pontuacao_id': occurrence.tipo_pontuacao_id,
             'imagens': images_urls,
         }), 200
 
     elif request.method == 'PUT':
-        data = request.get_json() # Use request.get_json() para dados JSON
+        data = request.get_json()
         
         try:
             if 'titulo' in data:
@@ -342,10 +330,9 @@ def manage_occurrence(occurrence_id):
             if 'endereco' in data:
                 occurrence.endereco = data['endereco']
             
-            # Status
             if 'status_id' in data:
                 new_status_id = int(data['status_id'])
-                if new_status_id != occurrence.status_id: # Só atualiza se for diferente
+                if new_status_id != occurrence.status_id:
                     occurrence.status_id = new_status_id
                     new_status = StatusOcorrencia.query.get(new_status_id)
                     if new_status and new_status.nome == 'Fechada com solução':
@@ -354,16 +341,15 @@ def manage_occurrence(occurrence_id):
                         if tipo_pontuacao_solucionada:
                             occurrence.tipo_pontuacao_id = tipo_pontuacao_solucionada.id
                     elif new_status and new_status.nome != 'Fechada com solução':
-                        occurrence.data_finalizacao = None # Limpa data de finalização
-                        occurrence.tipo_pontuacao_id = None # Limpa tipo de pontuação
+                        occurrence.data_finalizacao = None
+                        occurrence.tipo_pontuacao_id = None
 
-            # Órgão Responsável
-            if 'orgao_responsavel_id' in data: # Pode vir como null se "Nenhum" for selecionado
+            if 'orgao_responsavel_id' in data:
                 orgao_id_val = data['orgao_responsavel_id']
-                if orgao_id_val is not None and orgao_id_val != '': # Permite null ou vazio para desassociar
+                if orgao_id_val is not None and orgao_id_val != '':
                     occurrence.orgao_responsavel_id = int(orgao_id_val)
                 else:
-                    occurrence.orgao_responsavel_id = None # Desassocia
+                    occurrence.orgao_responsavel_id = None
 
             db.session.commit()
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
@@ -381,17 +367,15 @@ def manage_occurrence(occurrence_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
-@main_bp.route('/users', methods=['GET', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas Administrador pode gerenciar usuários
+@main_bp.route('/users', methods=['GET']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador'])
 def get_all_users():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
-    search_term = request.args.get('search', '').strip() # Pega o termo de busca da query string
+    search_term = request.args.get('search', '').strip()
     users_query = Usuario.query
 
     if search_term:
-        # Filtra por nome ou email (case-insensitive)
         users_query = users_query.filter(db.or_(
             Usuario.nome.ilike(f'%{search_term}%'),
             Usuario.email.ilike(f'%{search_term}%')
@@ -410,11 +394,10 @@ def get_all_users():
         })
     return jsonify(users_data), 200
 
-@main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-@roles_required(['Administrador']) # Apenas Administrador pode gerenciar usuários
+@main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador'])
 def manage_user(user_id):
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
     user = Usuario.query.get(user_id)
     if not user:
@@ -446,7 +429,7 @@ def manage_user(user_id):
             if 'perfil_id' in data:
                 user.perfil_id = data['perfil_id']
             if 'nova_senha' in data and data['nova_senha']:
-                user.redefinir_senha(data['nova_senha']) # Redefine a senha hasheando-a
+                user.redefinir_senha(data['nova_senha'])
 
             db.session.commit()
             return jsonify({'message': 'Usuário atualizado com sucesso!'}), 200
@@ -463,13 +446,12 @@ def manage_user(user_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar usuário: {str(e)}'}), 500
 
-@main_bp.route('/orgaos-responsaveis', methods=['GET', 'OPTIONS'])
-@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
+@main_bp.route('/orgaos-responsaveis', methods=['GET']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador', 'Moderador'])
 def get_all_orgaos():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
-    search_term = request.args.get('search', '').strip() # Add search term parameter
+    search_term = request.args.get('search', '').strip()
     orgaos_query = OrgaoResponsavel.query
 
     if search_term:
@@ -489,11 +471,10 @@ def get_all_orgaos():
         })
     return jsonify(orgaos_data), 200
 
-@main_bp.route('/orgao-responsavel', methods=['POST', 'OPTIONS'])
-@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
+@main_bp.route('/orgao-responsavel', methods=['POST']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador', 'Moderador'])
 def create_orgao():
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
     
     data = request.get_json()
     nome = data.get('nome')
@@ -516,11 +497,10 @@ def create_orgao():
         db.session.rollback()
         return jsonify({'error': f'Erro ao criar órgão responsável: {str(e)}'}), 500
 
-@main_bp.route('/orgao-responsavel/<int:orgao_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-@roles_required(['Administrador', 'Moderador']) # Modificado: Acesso para Moderador e Administrador
+@main_bp.route('/orgao-responsavel/<int:orgao_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
+@roles_required(['Administrador', 'Moderador'])
 def manage_orgao(orgao_id):
-    if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
 
     orgao = OrgaoResponsavel.query.get(orgao_id)
     if not orgao:
@@ -561,20 +541,18 @@ def manage_orgao(orgao_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar órgão responsável: {str(e)}'}), 500
 
-@main_bp.route('/status-ocorrencias', methods=['GET', 'OPTIONS'])
+@main_bp.route('/status-ocorrencias', methods=['GET']) # REMOVIDO 'OPTIONS'
 @login_required 
 def get_status_options():
-    if request.method == 'OPTIONS':
-        return '', 200
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
     
     status_list = StatusOcorrencia.query.all()
     return jsonify([{'id': s.id, 'nome': s.nome} for s in status_list]), 200
 
-@main_bp.route('/perfis', methods=['GET', 'OPTIONS'])
+@main_bp.route('/perfis', methods=['GET']) # REMOVIDO 'OPTIONS'
 @roles_required(['Administrador'])
 def get_profile_options():
-    if request.method == 'OPTIONS':
-        return '', 200
+    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
     
     profiles = Perfil.query.all()
     return jsonify([{'id': p.id, 'nome': p.nome} for p in profiles]), 200
