@@ -602,3 +602,41 @@ def get_ranking_semanal():
     sorted_ranking = sorted(users_with_scores, key=lambda x: x['pontos'], reverse=True)[:5] # Top 5
 
     return jsonify(sorted_ranking), 200
+
+@main_bp.route('/active-occurrences', methods=['GET', 'OPTIONS'])
+def get_active_occurrences():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        # Encontra o ID do status 'Em andamento'
+        status_em_andamento = StatusOcorrencia.query.filter_by(nome='Em andamento').first()
+        
+        if not status_em_andamento:
+            return jsonify({'error': "Status 'Em andamento' não encontrado. Contate o administrador."}), 500
+
+        # Busca todas as ocorrências com o status 'Em andamento' que tenham uma coordenada associada
+        # Usa .join(Coordenada) para garantir que só traga ocorrências com coordenadas
+        active_occurrences = Ocorrencia.query \
+            .filter_by(status_id=status_em_andamento.id) \
+            .join(Coordenada) \
+            .all()
+
+        occurrences_data = []
+        for occ in active_occurrences:
+            # Garante que a coordenada existe antes de tentar acessar latitude/longitude
+            if occ.coordenada:
+                occurrences_data.append({
+                    'id': occ.id,
+                    'titulo': occ.titulo,
+                    'endereco': occ.endereco,
+                    'latitude': occ.coordenada.latitude,
+                    'longitude': occ.coordenada.longitude,
+                    'status': occ.status_ocorrencia.nome # Inclui o status para informação
+                })
+        
+        return jsonify(occurrences_data), 200
+
+    except Exception as e:
+        print(f"Erro ao buscar ocorrências ativas: {e}")
+        return jsonify({'error': f'Ocorreu um erro ao carregar as ocorrências ativas: {str(e)}'}), 500

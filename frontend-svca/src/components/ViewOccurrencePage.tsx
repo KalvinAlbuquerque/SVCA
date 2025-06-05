@@ -321,11 +321,23 @@ const ViewOccurrencePage: React.FC = () => {
           {occurrence.latitude !== null && occurrence.longitude !== null && (
             <div className="form-group full-width-map" style={{ marginBottom: '20px' }}>
               <label>Localização no Mapa</label>
-              <MapComponent 
-                latitude={occurrence.latitude} 
-                longitude={occurrence.longitude} 
-                popupText={occurrence.endereco} 
-                zoom={15} // Ajuste o zoom conforme necessário
+              <MapComponent
+                occurrences={[{
+                  id: occurrence.id,
+                  titulo: occurrence.titulo,
+                  endereco: occurrence.endereco,
+                  latitude: occurrence.latitude,
+                  longitude: occurrence.longitude,
+                  status: occurrence.status_nome,
+                  showMarker: true, // Mostrar o marcador para esta ocorrência
+                  showCircle: false, // **MUDANÇA AQUI**: NÃO mostrar o círculo para esta ocorrência
+                }]}
+                initialZoom={15}
+                circleRadius={500} // O raio ainda é definido, mas o círculo não será mostrado
+                circleColor="#008BCC"
+                mapHeight="400px"
+                showAllMarkers={false} // Não sobrescrever o showMarker individual
+                showAllCircles={false} // **MUDANÇA AQUI**: Não mostrar o círculo, o showCircle individual vai controlar
               />
             </div>
           )}
