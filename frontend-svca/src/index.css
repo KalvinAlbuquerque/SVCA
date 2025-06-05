@@ -2357,3 +2357,152 @@ a:hover {
         width: 100%; /* Ocupa a largura total */
     }
 }
+
+/* src/index.css */
+
+/* ... (seus estilos existentes) ... */
+
+/* Estilos para a Página de Perfil */
+.profile-page-container {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    flex-grow: 1;
+    background-color: var(--white);
+}
+
+.profile-box {
+    max-width: 800px; /* Largura da caixa de perfil */
+    width: 95%;
+    padding: 40px;
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    text-align: center; /* Centraliza o conteúdo principal */
+}
+
+.profile-header {
+    margin-bottom: 30px;
+}
+
+.profile-avatar {
+    width: 150px; /* Tamanho do avatar */
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 3px solid var(--primary-blue); /* Borda ao redor do avatar */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-name {
+    font-size: 2.5rem; /* Tamanho do nome do perfil */
+    color: var(--text-dark);
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.profile-points {
+    font-size: 1.5rem; /* Tamanho da pontuação */
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+
+.section-title {
+    font-size: 1.8rem;
+    color: var(--primary-blue);
+    margin-top: 30px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    text-align: left; /* Alinha o título da seção à esquerda */
+}
+
+.validated-occurrences-section {
+    margin-top: 20px;
+    text-align: left; /* Garante que o texto da seção seja alinhado à esquerda */
+}
+
+.no-occurrences-message {
+    font-size: 1.1rem;
+    color: var(--text-medium);
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Reutilizando estilos de .occurrences-list e .occurrence-card de MyOccurrencesPage para consistência */
+.profile-box .occurrences-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.profile-box .occurrence-card {
+    background-color: #f7f9fc;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 25px;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.profile-box .occurrence-card-title {
+    font-size: 1.5rem;
+    color: var(--primary-blue);
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.profile-box .occurrence-card-status {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+.profile-box .occurrence-card-status span {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.profile-box .occurrence-card-address,
+.profile-box .occurrence-card-date {
+    font-size: 0.95rem;
+    color: var(--text-medium);
+    margin-bottom: 5px;
+}
+
+/* Responsividade para a página de perfil */
+@media (max-width: 768px) {
+    .profile-box {
+        padding: 30px 20px;
+    }
+    .profile-name {
+        font-size: 2rem;
+    }
+    .profile-points {
+        font-size: 1.2rem;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        text-align: center; /* Centraliza o título da seção em telas menores */
+    }
+    .profile-box .occurrence-card-title {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-box {
+        padding: 20px 15px;
+    }
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+    }
+    .profile-name {
+        font-size: 1.8rem;
+    }
+    .profile-points {
+        font-size: 1rem;
+    }
+}

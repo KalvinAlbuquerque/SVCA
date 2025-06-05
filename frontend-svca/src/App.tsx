@@ -15,8 +15,9 @@ import ManageOccurrencesPage from './components/ManageOccurrencesPage';
 import ManageUsersPage from './components/ManageUsersPage';
 import ManageOrganizationsPage from './components/ManageOrganizationsPage';
 import OrganizationFormPage from './components/OrganizationFormPage';
-import ContactPage from './components/ContactPage'; // Importe a ContactPage
-import ViewOccurrencePage from './components/ViewOccurrencePage'; // Importe a ViewOccurrencePage
+import ContactPage from './components/ContactPage';
+import ViewOccurrencePage from './components/ViewOccurrencePage';
+import ProfilePage from './components/ProfilePage'; // Importe a ProfilePage
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -69,7 +70,7 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/politicas" element={<PoliciesPage />} />
         <Route path="/sobre-nos" element={<AboutUsPage />} />
-        <Route path="/contato" element={<ContactPage />} /> {/* Rota para a ContactPage */}
+        <Route path="/contato" element={<ContactPage />} />
 
         {/* Rotas protegidas (apenas para usuários autenticados) */}
         <Route
@@ -88,12 +89,16 @@ const App: React.FC = () => {
           path="/gerenciar-conta"
           element={isAuthenticated ? <ManageAccountPage /> : <Navigate to="/login" replace />}
         />
+        <Route
+          path="/perfil"
+          element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" replace />}
+        />
 
         {/* Rotas para Moderador e Administrador */}
         {(userProfile === 'Moderador' || userProfile === 'Administrador') ? (
           <>
             <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
-            <Route path="/gerenciar-ocorrencias/:id" element={<ViewOccurrencePage />} /> {/* Rota para ViewOccurrencePage */}
+            <Route path="/gerenciar-ocorrencias/:id" element={<ViewOccurrencePage />} />
             <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
             <Route path="/gerenciar-orgaos/cadastrar" element={<OrganizationFormPage />} />
             <Route path="/gerenciar-orgaos/editar/:id" element={<OrganizationFormPage />} />

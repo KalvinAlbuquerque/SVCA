@@ -19,6 +19,9 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, userProfile = 
     setShowMenu(false); // Fecha o menu ao clicar em um item
   };
 
+  // Determina para onde o logo deve redirecionar
+  const logoRedirectPath = isAuthenticated ? '/dashboard' : '/';
+
   return (
     <header className="main-header">
       <nav className="main-nav">
@@ -35,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, userProfile = 
               {showMenu && (
                 <ul className="dropdown-menu">
                   <li><Link to="/dashboard" onClick={handleMenuItemClick}>Dashboard</Link></li>
+                  <li><Link to="/perfil" onClick={handleMenuItemClick}>Meu Perfil</Link></li>
                   {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
                     <li><Link to="/gerenciar-ocorrencias" onClick={handleMenuItemClick}>Gerenciar Ocorrências</Link></li>
                   ) : null}
@@ -52,10 +56,13 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, userProfile = 
            <li className="nav-item"><Link to="/politicas">Políticas de Uso</Link></li>
         </ul>
         
-        <div className="header-logo-container">
-            <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" />
-            <span className="header-logo-text">Vigilância Comunitária da Água</span>
-        </div>
+        {/* O logo agora é um link condicional para o dashboard ou página inicial */}
+        <Link to={logoRedirectPath} className="header-logo-link"> {/* Adicionei uma nova classe para estilização se necessário */}
+            <div className="header-logo-container">
+                <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" />
+                <span className="header-logo-text">Vigilância Comunitária da Água</span>
+            </div>
+        </Link>
 
         {!isAuthenticated && (
           <div className="header-auth-buttons">
