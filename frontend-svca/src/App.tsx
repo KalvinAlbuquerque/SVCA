@@ -96,6 +96,14 @@ const App: React.FC = () => {
           element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" replace />}
         />
 
+         {/* *** NOVA ROTA PARA USUÁRIOS COMUNS VISUALIZAREM OCORRÊNCIA *** */}
+        {/* Usamos o mesmo componente ViewOccurrencePage, mas com uma rota diferente */}
+        <Route
+          path="/ocorrencia/:id" // *** VERIFIQUE ESTE CAMINHO ***
+          element={<ViewOccurrencePage />}
+        />
+        {/* FIM DA NOVA ROTA PARA USUÁRIOS COMUNS */}
+
         {/* Rotas para Moderador e Administrador */}
         {(userProfile === 'Moderador' || userProfile === 'Administrador') ? (
           <>

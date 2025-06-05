@@ -1,7 +1,7 @@
 // frontend-svca/src/components/HomePage.tsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import MapComponent from './MapComponent'; // Importe o novo MapComponent
+import MapComponent from './MapComponent'; // Importe o MapComponent novamente para a HomePage
 
 interface RankingUser {
   id: number;
@@ -38,7 +38,7 @@ const HomePage: React.FC = () => {
       try {
         const response = await fetch('http://localhost:5000/ranking-semanal', {
           method: 'GET',
-          credentials: 'include',
+          credentials: 'include', // Pode ser necessário se o ranking depender de usuário logado
         });
 
         if (!response.ok) {
@@ -82,7 +82,7 @@ const HomePage: React.FC = () => {
 
     fetchRanking();
     fetchActiveOccurrences(); // Chamar a nova função de busca
-  }, []); // Executa uma vez ao montar o componente
+  }, []);
 
   return (
     <div className="homepage-container">
@@ -108,36 +108,40 @@ const HomePage: React.FC = () => {
           <Link to="/ranking-semanal" className="btn-secondary">Ver mais...</Link>
         </aside>
 
-        <main className="main-map-area">
-          {loadingMap && <h1>Carregando Mapa...</h1>}
-          {errorMap && <h1 className="error-message">Erro ao carregar mapa: {errorMap}</h1>}
-          {!loadingMap && !errorMap && activeOccurrences.length === 0 && (
-            <h1>Nenhuma ocorrência ativa no momento.</h1>
-          )}
-          {!loadingMap && !errorMap && activeOccurrences.length > 0 && (
-            // Renderiza o MapComponent com as ocorrências ativas
-            <MapComponent 
-              occurrences={activeOccurrences} 
-              initialZoom={10} // Zoom um pouco mais distante para ver mais área
-              circleRadius={500} // Mantém o raio de 500m
-              circleColor="#FF4500" // Exemplo: uma cor diferente para ocorrências ativas no mapa principal (laranja avermelhado)
-              mapHeight="100%" // Ocupa 100% da altura da div pai
-              showAllMarkers={true}
-              showAllCircles={true}
-            />
-          )}
-        </main>
-      </div>
+        {/* MUDANÇA AQUI: Nova div para agrupar mapa e botão */}
+        <div className="map-and-button-area">
+          <main className="main-map-area">
+            {loadingMap && <h1>Carregando Mapa...</h1>}
+            {errorMap && <h1 className="error-message">Erro ao carregar mapa: {errorMap}</h1>}
+            {!loadingMap && !errorMap && activeOccurrences.length === 0 && (
+              <h1>Nenhuma ocorrência ativa no momento.</h1>
+            )}
+            {!loadingMap && !errorMap && activeOccurrences.length > 0 && (
+              <MapComponent 
+                occurrences={activeOccurrences} 
+                initialZoom={10}
+                circleRadius={500}
+                circleColor="#FF4500"
+                mapHeight="100%"
+                showAllMarkers={true}
+                showAllCircles={true}
+              />
+            )}
+          </main>
 
-      <Link to="/registrar-ocorrencia" className="btn-floating">
-        + Registrar nova ocorrência
-      </Link>
+          {/* MUDANÇA AQUI: Botão Registrar ocorrência movido para dentro de map-and-button-area */}
+          <Link to="/registrar-ocorrencia" className="btn-floating-homepage">
+            + Registrar nova ocorrência
+          </Link>
+        </div> {/* Fim de map-and-button-area */}
 
+      {/* Footer (mantido no final do homepage-container) */}
       <div className="homepage-footer-logo">
         <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" />
         <p className="slogan">Vigilância Comunitária da Água</p>
         <p className="homepage-slogan-text">Promovendo o acesso a água limpa em comunidades</p>
       </div>
+    </div>
     </div>
   );
 };

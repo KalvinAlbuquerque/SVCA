@@ -1,7 +1,7 @@
 // frontend-svca/src/components/ViewOccurrencePage.tsx
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import MapComponent from './MapComponent'; // Importe o componente MapComponent
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Adicione useLocation
+import MapComponent from './MapComponent'; // Importe seu MapComponent
 
 // Interface para os dados completos da ocorrência (como vêm do backend)
 interface OccurrenceDetail {
@@ -29,7 +29,6 @@ interface OccurrenceFormData {
   endereco: string;
   status_id: number;
   orgao_responsavel_id: number | null; // Pode ser null
-  // latitude e longitude não são editáveis aqui, apenas exibidos
 }
 
 // Interfaces para as opções de dropdown
@@ -46,15 +45,26 @@ interface OrganizationOption {
 const ViewOccurrencePage: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // Pega o ID da ocorrência da URL
   const navigate = useNavigate();
+  const location = useLocation(); // Hook para obter a rota atual
 
   const [occurrence, setOccurrence] = useState<OccurrenceDetail | null>(null); // Dados originais da ocorrência
   const [form, setForm] = useState<OccurrenceFormData | null>(null); // Estado do formulário para edição
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); //
+  const [error, setError] = useState<string | null>(null); //
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null); //
 
-  const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]);
-  const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>([]);
+  const [statusOptions, setStatusOptions] = useState<StatusOption[]>([]); //
+  const [organizationOptions, setOrganizationOptions] = useState<OrganizationOption[]>([]); //
+
+  // Lógica para determinar se o usuário pode editar
+  const userProfile = localStorage.getItem('userProfile');
+  const canEdit = userProfile === 'Administrador' || userProfile === 'Moderador';
+
+  // Lógica para determinar qual endpoint buscar
+  const isManagementRoute = location.pathname.startsWith('/gerenciar-ocorrencias');
+  const fetchUrl = isManagementRoute
+    ? `http://localhost:5000/occurrence/${id}` // Rota de edição/gerenciamento para Mod/Admin
+    : `http://localhost:5000/view-occurrence/${id}`; // Rota de visualização para todos
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -62,7 +72,7 @@ const ViewOccurrencePage: React.FC = () => {
       setError(null);
       try {
         // Busca os detalhes da ocorrência
-        const occurrenceResponse = await fetch(`http://localhost:5000/occurrence/${id}`, {
+        const occurrenceResponse = await fetch(fetchUrl, { // Usa a URL dinâmica
           method: 'GET',
           credentials: 'include',
         });
@@ -75,25 +85,27 @@ const ViewOccurrencePage: React.FC = () => {
           throw new Error(errorData.error || 'Falha ao buscar detalhes da ocorrência.');
         }
         const occurrenceData: OccurrenceDetail = await occurrenceResponse.json();
-        setOccurrence(occurrenceData);
+        setOccurrence(occurrenceData); // Armazena os dados completos para exibição (ex: data_registro, usuario_nome)
 
-        // Busca as opções de status
-        const statusResponse = await fetch('http://localhost:5000/status-ocorrencias', { credentials: 'include' });
-        if (!statusResponse.ok) {
-          throw new Error('Falha ao buscar opções de status.');
+        // Busca opções de status e órgãos APENAS se o usuário puder editar,
+        // para evitar requisições desnecessárias para usuários comuns
+        if (canEdit) {
+          const statusResponse = await fetch('http://localhost:5000/status-ocorrencias', { credentials: 'include' });
+          if (!statusResponse.ok) {
+            throw new Error('Falha ao buscar opções de status.');
+          }
+          const statusData: StatusOption[] = await statusResponse.json();
+          setStatusOptions(statusData);
+
+          const orgResponse = await fetch('http://localhost:5000/orgaos-responsaveis', { credentials: 'include' });
+          if (!orgResponse.ok) {
+            throw new Error('Falha ao buscar opções de órgãos responsáveis.');
+          }
+          const orgData: OrganizationOption[] = await orgResponse.json();
+          setOrganizationOptions(orgData);
         }
-        const statusData: StatusOption[] = await statusResponse.json();
-        setStatusOptions(statusData);
 
-        // Busca as opções de órgãos responsáveis
-        const orgResponse = await fetch('http://localhost:5000/orgaos-responsaveis', { credentials: 'include' });
-        if (!orgResponse.ok) {
-          throw new Error('Falha ao buscar opções de órgãos responsáveis.');
-        }
-        const orgData: OrganizationOption[] = await orgResponse.json();
-        setOrganizationOptions(orgData);
-
-        // Inicializa o estado do formulário com os dados da ocorrência para edição
+        // Inicializa o estado do formulário com os dados da ocorrência para edição (se for editável)
         setForm({
           titulo: occurrenceData.titulo,
           descricao: occurrenceData.descricao,
@@ -111,15 +123,16 @@ const ViewOccurrencePage: React.FC = () => {
     };
 
     fetchAllData();
-  }, [id, navigate]); // Dependências: id e navigate
+  }, [id, navigate, fetchUrl, canEdit]); // Adicione fetchUrl e canEdit como dependências
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(prevForm => {
-      if (!prevForm) return null;
+      if (!prevForm) return null; // Garante que prevForm não é nulo
 
+      // Converte para número se for campo de ID
       const parsedValue = (name === 'status_id' || name === 'orgao_responsavel_id')
-        ? (value === '' ? null : Number(value))
+        ? (value === '' ? null : Number(value)) // Trata option vazia como null para IDs
         : value;
 
       return {
@@ -134,9 +147,15 @@ const ViewOccurrencePage: React.FC = () => {
     setMessage(null);
     setError(null);
 
+    // Se não puder editar, não faz nada ao tentar submeter
+    if (!canEdit) {
+      setMessage({ type: 'error', text: 'Você não tem permissão para editar esta ocorrência.' });
+      return;
+    }
+
     if (!form || !form.titulo || !form.descricao || !form.endereco || !form.status_id) {
-        setMessage({ type: 'error', text: 'Título, Descrição, Endereço e Status são obrigatórios.' });
-        return;
+      setMessage({ type: 'error', text: 'Título, Descrição, Endereço e Status são obrigatórios.' });
+      return;
     }
 
     try {
@@ -150,7 +169,7 @@ const ViewOccurrencePage: React.FC = () => {
           descricao: form.descricao,
           endereco: form.endereco,
           status_id: form.status_id,
-          orgao_responsavel_id: form.orgao_responsavel_id,
+          orgao_responsavel_id: form.orgao_responsavel_id, // Pode ser null
         }),
         credentials: 'include',
       });
@@ -159,8 +178,9 @@ const ViewOccurrencePage: React.FC = () => {
 
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Ocorrência atualizada com sucesso!' });
-        const updatedOccurrence = await fetch(`http://localhost:5000/occurrence/${id}`, { method: 'GET', credentials: 'include' }).then(res => res.json());
-        setOccurrence(updatedOccurrence);
+        // Opcional: Refetch a ocorrência para exibir quaisquer mudanças no backend (ex: data_finalizacao)
+        const updatedOccurrence = await fetch(fetchUrl, { method: 'GET', credentials: 'include' }).then(res => res.json());
+        setOccurrence(updatedOccurrence); // Atualiza os dados de exibição da ocorrência
         setTimeout(() => setMessage(null), 3000);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao atualizar ocorrência.' });
@@ -179,14 +199,14 @@ const ViewOccurrencePage: React.FC = () => {
     return <main className="manage-page-container"><p className="error-message">{error}</p></main>;
   }
 
-  if (!occurrence || !form) {
+  if (!occurrence || !form) { // Verifica se ambos occurrence e form foram carregados
     return <main className="manage-page-container"><p>Ocorrência não encontrada ou dados incompletos.</p></main>;
   }
 
   return (
     <main className="manage-page-container">
       <div className="manage-box view-occurrence-box">
-        <h1 className="manage-title">Ocorrência #{occurrence.id}</h1>
+        <h1 className="manage-title">Ocorrência #{occurrence.id}</h1> {/* Título conforme a imagem */}
 
         {message && (
           <div className={`message ${message.type}`}>
@@ -194,16 +214,17 @@ const ViewOccurrencePage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="occurrence-view-form">
-          <div className="form-grid">
+        <form onSubmit={handleSubmit} className="occurrence-view-form"> {/* Form para agrupar campos */}
+          <div className="form-grid"> {/* Grid para layout em duas colunas */}
             <div className="form-group">
               <label htmlFor="status_id">Status</label>
               <select
                 id="status_id"
                 name="status_id"
-                value={form.status_id || ''}
+                value={form.status_id || ''} // Use '' para a opção "Selecione..."
                 onChange={handleChange}
                 required
+                disabled={!canEdit} 
               >
                 <option value="">Selecione o status</option>
                 {statusOptions.map(status => (
@@ -222,6 +243,7 @@ const ViewOccurrencePage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Título da ocorrência"
                 required
+                disabled={!canEdit} 
               />
             </div>
 
@@ -231,7 +253,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="data_registro"
                 name="data_registro"
-                value={occurrence.data_registro}
+                value={occurrence.data_registro} // Somente leitura
                 readOnly
                 disabled
               />
@@ -247,6 +269,7 @@ const ViewOccurrencePage: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Endereço da ocorrência"
                 required
+                disabled={!canEdit}
               />
             </div>
 
@@ -256,7 +279,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="data_finalizacao"
                 name="data_finalizacao"
-                value={occurrence.data_finalizacao || 'N/A'}
+                value={occurrence.data_finalizacao || 'N/A'} // Somente leitura
                 readOnly
                 disabled
               />
@@ -268,7 +291,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="usuario_nome"
                 name="usuario_nome"
-                value={occurrence.usuario_nome || 'N/A'}
+                value={occurrence.usuario_nome || 'N/A'} // Somente leitura
                 readOnly
                 disabled
               />
@@ -279,8 +302,9 @@ const ViewOccurrencePage: React.FC = () => {
               <select
                 id="orgao_responsavel_id"
                 name="orgao_responsavel_id"
-                value={form.orgao_responsavel_id || ''}
+                value={form.orgao_responsavel_id || ''} // Use '' para a opção "Nenhum"
                 onChange={handleChange}
+                disabled={!canEdit} 
               >
                 <option value="">Nenhum</option>
                 {organizationOptions.map(org => (
@@ -288,21 +312,25 @@ const ViewOccurrencePage: React.FC = () => {
                 ))}
               </select>
             </div>
-            
-            <div className="form-group image-display-group">
-                <label>Imagens</label>
-                <div className="current-images-container">
-                    {occurrence.imagens.length > 0 ? (
-                        occurrence.imagens.map((imgUrl, idx) => (
-                            <img key={idx} src={imgUrl} alt={`Imagem ${idx + 1}`} className="current-image-thumbnail" />
-                        ))
-                    ) : (
-                        <p>Nenhuma imagem existente.</p>
-                    )}
-                </div>
-                <small className="form-text-info">As imagens são gerenciadas separadamente. Para adicionar ou remover, utilize a interface de gerenciamento de arquivos se disponível.</small>
+
+            {/* Seção de Imagens - Simplificada para não lidar com upload real via PUT da ocorrência */}
+            <div className="form-group image-display-group"> {/* Renomeado para refletir que é mais para display */}
+              <label>Imagens</label>
+              <div className="current-images-container">
+                {occurrence.imagens.length > 0 ? (
+                  occurrence.imagens.map((imgUrl, idx) => (
+                    <img key={idx} src={imgUrl} alt={`Imagem ${idx + 1}`} className="current-image-thumbnail" />
+                  ))
+                ) : (
+                  <p>Nenhuma imagem existente.</p>
+                )}
+              </div>
+              {/* O botão '+' da imagem sugere upload, mas a funcionalidade de adicionar/remover imagens
+                    em uma ocorrência existente via PUT complexifica muito o backend para essa etapa.
+                    Pode ser implementado como uma funcionalidade separada de upload de imagens. */}
+              <small className="form-text-info">As imagens são gerenciadas separadamente. Para adicionar ou remover, utilize a interface de gerenciamento de arquivos se disponível.</small>
             </div>
-          </div>
+          </div> {/* Fim do form-grid */}
 
           <div className="form-group full-width-description">
             <label htmlFor="descricao">Descrição</label>
@@ -314,10 +342,10 @@ const ViewOccurrencePage: React.FC = () => {
               placeholder="Descreva detalhadamente a ocorrência..."
               rows={6}
               required
+              disabled={!canEdit}
             ></textarea>
           </div>
 
-          {/* Adicione o MapComponent aqui, se as coordenadas estiverem disponíveis */}
           {occurrence.latitude !== null && occurrence.longitude !== null && (
             <div className="form-group full-width-map" style={{ marginBottom: '20px' }}>
               <label>Localização no Mapa</label>
@@ -329,22 +357,24 @@ const ViewOccurrencePage: React.FC = () => {
                   latitude: occurrence.latitude,
                   longitude: occurrence.longitude,
                   status: occurrence.status_nome,
-                  showMarker: true, // Mostrar o marcador para esta ocorrência
-                  showCircle: false, // **MUDANÇA AQUI**: NÃO mostrar o círculo para esta ocorrência
+                  showMarker: true,  // Mostrar o marcador
+                  showCircle: false, // NÃO mostrar o círculo
                 }]}
                 initialZoom={15}
-                circleRadius={500} // O raio ainda é definido, mas o círculo não será mostrado
+                circleRadius={500}
                 circleColor="#008BCC"
                 mapHeight="400px"
-                showAllMarkers={false} // Não sobrescrever o showMarker individual
-                showAllCircles={false} // **MUDANÇA AQUI**: Não mostrar o círculo, o showCircle individual vai controlar
+                showAllMarkers={false}
+                showAllCircles={false} // Não mostrar círculos globalmente, o showCircle individual controla
               />
             </div>
           )}
 
           <div className="modal-actions">
-            <button type="submit" className="btn-primary">Salvar</button>
-            <button type="button" className="btn-secondary-modal" onClick={() => navigate('/gerenciar-ocorrencias')}>Voltar</button>
+            {canEdit && ( // Renderizar botões de edição apenas se puder editar
+              <button type="submit" className="btn-primary">Salvar</button>
+            )}
+            <button type="button" className="btn-secondary-modal" onClick={() => navigate(-1)}>Voltar</button> {/* Use navigate(-1) para voltar à página anterior */}
           </div>
         </form>
       </div>

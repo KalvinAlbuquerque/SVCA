@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard: React.FC = () => {
   const [userName, setUserName] = useState<string>('Usuário');
   const [userProfile, setUserProfile] = useState<string | null>(null);
-  const [userAvatarUrl, setUserAvatarUrl] = useState<string>('/avatar.svg'); // Novo estado para a URL do avatar, com padrão
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string>('/avatar.svg');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,8 +60,12 @@ const Dashboard: React.FC = () => {
 
       <div className="dashboard-cards">
         {/* Cards Comuns para todos os perfis */}
-        <div className="card" onClick={() => handleCardClick('/mapa-ocorrencias')}> {/* *** MUDANÇA AQUI: Nova rota para o mapa *** */}
-          <img src="/mapa.svg" alt="Mapa" className="card-icon" />
+        <div className="card" onClick={() => handleCardClick('/registrar-ocorrencia')}> {/* NOVO CARD PARA REGISTRAR OCORRÊNCIA */}
+          <img src="/registrar_ocorrencia.png" alt="Registrar Ocorrência" className="card-icon" />
+          <h3>Registrar Ocorrência</h3>
+        </div>
+        <div className="card" onClick={() => handleCardClick('/mapa-ocorrencias')}> {/* Card para a página dedicada do mapa */}
+          <img src="/mapa2.png" alt="Mapa de Ocorrências" className="card-icon" />
           <h3>Mapa</h3>
         </div>
         <div className="card" onClick={() => handleCardClick('/minhas-ocorrencias')}>
@@ -80,7 +84,7 @@ const Dashboard: React.FC = () => {
         {/* Cards específicos para Moderador e Administrador */}
         {(userProfile === 'Moderador' || userProfile === 'Administrador') && (
           <div className="card" onClick={() => handleCardClick('/gerenciar-ocorrencias')}>
-            <img src="/minhas_ocorrencias.svg" alt="Gerenciar Ocorrências" className="card-icon" /> {/* Substitua com o ícone correto */}
+            <img src="/gerenciar_ocorrencias.png" alt="Gerenciar Ocorrências" className="card-icon" /> {/* Substitua com o ícone correto */}
             <h3>Gerenciar Ocorrências</h3>
           </div>
         )}

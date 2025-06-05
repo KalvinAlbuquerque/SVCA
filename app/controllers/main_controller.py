@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, session, url_for
 from ..models.usuario import Usuario
 from ..models.ocorrencia import Ocorrencia, StatusOcorrencia
-from ..models.coordenada import Coordenada
+from ..models.coordenada import Coordenada # Adicione Coordenada
 from ..models.imagem import Imagem
 from ..models.perfil import Perfil
 from ..models.tipo_pontuacao import TipoPontuacao
@@ -40,9 +40,8 @@ def login():
             return jsonify({'error': 'Email ou senha incorretos.'}), 401
     return "Backend em funcionamento. Acesse o frontend React."
 
-@main_bp.route('/register', methods=['POST']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/register', methods=['POST'])
 def register():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
     data = request.get_json()
     nome = data.get('nome')
     sobrenome = data.get('sobrenome')
@@ -84,14 +83,14 @@ def register():
         return jsonify({'error': 'Ocorreu um erro ao registrar o usuário.'}), 500
 
 @main_bp.route('/dashboard')
-@login_required # Protege a rota do dashboard
+@login_required
 def dashboard():
     user_name = session.get('user_name', 'Usuário')
     user_profile = session.get('user_profile', 'N/A')
     return jsonify({'message': f'Bem-vindo ao dashboard, {user_name}!', 'user_profile': user_profile})
 
 @main_bp.route('/logout', methods=['POST'])
-@login_required # Protege a rota de logout
+@login_required
 def logout():
     session.pop('user_id', None)
     session.pop('user_name', None)
@@ -99,7 +98,7 @@ def logout():
     return jsonify({'message': 'Você foi desconectado.'}), 200
 
 @main_bp.route('/register-occurrence', methods=['POST'])
-@login_required 
+@login_required
 def register_occurrence():
     user_id = session.get('user_id')
     current_user = Usuario.query.get(user_id)
@@ -109,20 +108,18 @@ def register_occurrence():
     titulo = request.form.get('titulo')
     endereco = request.form.get('endereco')
     descricao = request.form.get('descricao')
-    # NOVOS CAMPOS: Latitude e Longitude
+    # NOVOS CAMPOS: Latitude e Longitude (da implementação anterior)
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
     
-    if not titulo or not endereco or not descricao or not latitude or not longitude: # Valide também as coordenadas
+    if not titulo or not endereco or not descricao or not latitude or not longitude:
         return jsonify({'error': 'Título, Endereço, Descrição, Latitude e Longitude são obrigatórios.'}), 400
 
     try:
-        # Crie ou encontre a coordenada
-        # Para simplicidade, vamos criar uma nova coordenada para cada ocorrência.
-        # Em um sistema real, você pode querer reutilizar coordenadas existentes ou normalizá-las.
+        # Crie a coordenada (da implementação anterior)
         new_coordenada = Coordenada(latitude=float(latitude), longitude=float(longitude))
         db.session.add(new_coordenada)
-        db.session.flush() # Para que new_coordenada.id esteja disponível
+        db.session.flush()
 
         status_em_andamento = StatusOcorrencia.query.filter_by(nome='Em andamento').first()
         if not status_em_andamento:
@@ -166,12 +163,9 @@ def register_occurrence():
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
 
-
-@main_bp.route('/my-occurrences', methods=['GET']) # REMOVIDO 'OPTIONS'
-@login_required # Protege a rota
+@main_bp.route('/my-occurrences', methods=['GET'])
+@login_required
 def get_my_occurrences():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     user_id = session.get('user_id')
     current_user = Usuario.query.get(user_id)
     if not current_user:
@@ -182,6 +176,13 @@ def get_my_occurrences():
     occurrences_data = []
     for occ in occurrences:
         images_urls = [img.url for img in occ.imagens]
+        orgao_nome = occ.orgao_responsavel.nome if occ.orgao_responsavel else None
+        
+        latitude = None
+        longitude = None
+        if occ.coordenada: # Verifica se a ocorrência tem uma coordenada associada
+            latitude = occ.coordenada.latitude
+            longitude = occ.coordenada.longitude
 
         occurrences_data.append({
             'id': occ.id,
@@ -191,13 +192,15 @@ def get_my_occurrences():
             'data_registro': occ.data_registro.strftime('%Y-%m-%d'),
             'status': occ.status_ocorrencia.nome if occ.status_ocorrencia else 'N/A',
             'imagens': images_urls,
+            'latitude': latitude, # Adicione latitude
+            'longitude': longitude, # Adicione longitude
         })
 
     return jsonify(occurrences_data), 200
 
 # --- ROTA COMBINADA PARA USER PROFILE (GET e PUT) ---
-@main_bp.route('/user-profile', methods=['GET', 'PUT']) # REMOVIDO 'OPTIONS'
-@login_required # O decorador já lida com OPTIONS.
+@main_bp.route('/user-profile', methods=['GET', 'PUT'])
+@login_required
 def user_profile():
     user_id = session.get('user_id')
     user = Usuario.query.get(user_id)
@@ -254,7 +257,6 @@ def user_profile():
                     return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
                 user.redefinir_senha(data['nova_senha'])
             
-            # Adicione o avatar_url para ser atualizado
             if 'avatar_url' in data:
                 if hasattr(user, 'avatar_url'):
                     user.avatar_url = data['avatar_url']
@@ -267,13 +269,48 @@ def user_profile():
             print(f"Erro ao atualizar perfil: {e}")
             return jsonify({'error': f'Ocorreu um erro ao atualizar o perfil: {str(e)}'}), 500
 
+# --- ROTAS PARA USUÁRIOS COMUNS (Visualização) ---
+@main_bp.route('/view-occurrence/<int:occurrence_id>', methods=['GET'])
+@login_required
+def view_occurrence_public(occurrence_id):
+    occurrence = Ocorrencia.query.get(occurrence_id)
+    if not occurrence:
+        return jsonify({'error': 'Ocorrência não encontrada.'}), 404
+
+    images_urls = [img.url for img in occurrence.imagens]
+    orgao_nome = occurrence.orgao_responsavel.nome if occurrence.orgao_responsavel else None
+    
+    latitude = None
+    longitude = None
+    if occurrence.coordenada:
+        latitude = occurrence.coordenada.latitude
+        longitude = occurrence.coordenada.longitude
+
+    return jsonify({
+        'id': occurrence.id,
+        'titulo': occurrence.titulo,
+        'descricao': occurrence.descricao,
+        'endereco': occurrence.endereco,
+        'data_registro': occurrence.data_registro.strftime('%Y-%m-%d'),
+        'data_finalizacao': occurrence.data_finalizacao.strftime('%Y-%m-%d') if occurrence.data_finalizacao else None,
+        'status_id': occurrence.status_id,
+        'status_nome': occurrence.status_ocorrencia.nome if occurrence.status_ocorrencia else 'N/A',
+        'usuario_id': occurrence.usuario_id,
+        'usuario_nome': occurrence.usuario.nome if occurrence.usuario else 'N/A',
+        'orgao_responsavel_id': occurrence.orgao_responsavel_id,
+        'orgao_responsavel_nome': orgao_nome,
+        'tipo_pontuacao_id': occurrence.tipo_pontuacao_id,
+        'imagens': images_urls,
+        'latitude': latitude,
+        'longitude': longitude,
+    }), 200
+
+
 # --- ROTAS PARA MODERADOR E ADMINISTRADOR ---
 
-@main_bp.route('/occurrences', methods=['GET']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/occurrences', methods=['GET'])
 @roles_required(['Administrador', 'Moderador'])
 def get_all_occurrences():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     search_term = request.args.get('search', '').strip()
     occurrences_query = Ocorrencia.query
 
@@ -311,10 +348,9 @@ def manage_occurrence(occurrence_id):
         images_urls = [img.url for img in occurrence.imagens]
         orgao_nome = occurrence.orgao_responsavel.nome if occurrence.orgao_responsavel else None
         
-        # Obter coordenadas se existirem
         latitude = None
         longitude = None
-        if occurrence.coordenada: # Verifica se a ocorrência tem uma coordenada associada
+        if occurrence.coordenada:
             latitude = occurrence.coordenada.latitude
             longitude = occurrence.coordenada.longitude
 
@@ -333,8 +369,8 @@ def manage_occurrence(occurrence_id):
             'orgao_responsavel_nome': orgao_nome,
             'tipo_pontuacao_id': occurrence.tipo_pontuacao_id,
             'imagens': images_urls,
-            'latitude': latitude, # Adicione latitude
-            'longitude': longitude, # Adicione longitude
+            'latitude': latitude,
+            'longitude': longitude,
         }), 200
 
     elif request.method == 'PUT':
@@ -385,11 +421,9 @@ def manage_occurrence(occurrence_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
-@main_bp.route('/users', methods=['GET']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/users', methods=['GET'])
 @roles_required(['Administrador'])
 def get_all_users():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     search_term = request.args.get('search', '').strip()
     users_query = Usuario.query
 
@@ -412,11 +446,9 @@ def get_all_users():
         })
     return jsonify(users_data), 200
 
-@main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador'])
 def manage_user(user_id):
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     user = Usuario.query.get(user_id)
     if not user:
         return jsonify({'error': 'Usuário não encontrado.'}), 404
@@ -464,11 +496,9 @@ def manage_user(user_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar usuário: {str(e)}'}), 500
 
-@main_bp.route('/orgaos-responsaveis', methods=['GET']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/orgaos-responsaveis', methods=['GET'])
 @roles_required(['Administrador', 'Moderador'])
 def get_all_orgaos():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     search_term = request.args.get('search', '').strip()
     orgaos_query = OrgaoResponsavel.query
 
@@ -489,11 +519,9 @@ def get_all_orgaos():
         })
     return jsonify(orgaos_data), 200
 
-@main_bp.route('/orgao-responsavel', methods=['POST']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/orgao-responsavel', methods=['POST'])
 @roles_required(['Administrador', 'Moderador'])
 def create_orgao():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-    
     data = request.get_json()
     nome = data.get('nome')
     email = data.get('email')
@@ -515,11 +543,9 @@ def create_orgao():
         db.session.rollback()
         return jsonify({'error': f'Erro ao criar órgão responsável: {str(e)}'}), 500
 
-@main_bp.route('/orgao-responsavel/<int:orgao_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/orgao-responsavel/<int:orgao_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador', 'Moderador'])
 def manage_orgao(orgao_id):
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     orgao = OrgaoResponsavel.query.get(orgao_id)
     if not orgao:
         return jsonify({'error': 'Órgão responsável não encontrado.'}), 404
@@ -559,47 +585,35 @@ def manage_orgao(orgao_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar órgão responsável: {str(e)}'}), 500
 
-@main_bp.route('/status-ocorrencias', methods=['GET']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/status-ocorrencias', methods=['GET'])
 @login_required 
 def get_status_options():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-    
     status_list = StatusOcorrencia.query.all()
     return jsonify([{'id': s.id, 'nome': s.nome} for s in status_list]), 200
 
-@main_bp.route('/perfis', methods=['GET']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/perfis', methods=['GET'])
 @roles_required(['Administrador'])
 def get_profile_options():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-    
     profiles = Perfil.query.all()
     return jsonify([{'id': p.id, 'nome': p.nome} for p in profiles]), 200
 
-# --- NOVA ROTA PARA O RANKING SEMANAL ---
 @main_bp.route('/ranking-semanal', methods=['GET', 'OPTIONS'])
 def get_ranking_semanal():
     if request.method == 'OPTIONS':
         return '', 200
 
-    # Busca os usuários, ordenados pela pontuação em ordem decrescente
-    # (assumindo que 'consultar_pontuacao' pode ser chamada ou que a pontuação é uma coluna)
-    # Para ordenar diretamente no banco, precisaríamos da pontuação persistida ou de uma forma mais complexa.
-    # Por simplicidade, vamos buscar todos e ordenar em Python.
     users = Usuario.query.all()
 
-    # Calcular a pontuação para cada usuário e armazenar temporariamente
     users_with_scores = []
     for user in users:
         users_with_scores.append({
             'id': user.id,
             'nome': user.nome,
-            'pontos': user.consultar_pontuacao(), # Método existente no modelo Usuario
-            'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else '/avatar.svg', # Retorna o avatar
+            'pontos': user.consultar_pontuacao(),
+            'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else '/avatar.svg',
         })
     
-    # Ordenar os usuários pela pontuação em ordem decrescente
-    # e pegar os top 5 (ou quantos você quiser)
-    sorted_ranking = sorted(users_with_scores, key=lambda x: x['pontos'], reverse=True)[:5] # Top 5
+    sorted_ranking = sorted(users_with_scores, key=lambda x: x['pontos'], reverse=True)[:5]
 
     return jsonify(sorted_ranking), 200
 
@@ -609,14 +623,11 @@ def get_active_occurrences():
         return '', 200
 
     try:
-        # Encontra o ID do status 'Em andamento'
         status_em_andamento = StatusOcorrencia.query.filter_by(nome='Em andamento').first()
         
         if not status_em_andamento:
             return jsonify({'error': "Status 'Em andamento' não encontrado. Contate o administrador."}), 500
 
-        # Busca todas as ocorrências com o status 'Em andamento' que tenham uma coordenada associada
-        # Usa .join(Coordenada) para garantir que só traga ocorrências com coordenadas
         active_occurrences = Ocorrencia.query \
             .filter_by(status_id=status_em_andamento.id) \
             .join(Coordenada) \
@@ -624,7 +635,6 @@ def get_active_occurrences():
 
         occurrences_data = []
         for occ in active_occurrences:
-            # Garante que a coordenada existe antes de tentar acessar latitude/longitude
             if occ.coordenada:
                 occurrences_data.append({
                     'id': occ.id,
@@ -632,7 +642,7 @@ def get_active_occurrences():
                     'endereco': occ.endereco,
                     'latitude': occ.coordenada.latitude,
                     'longitude': occ.coordenada.longitude,
-                    'status': occ.status_ocorrencia.nome # Inclui o status para informação
+                    'status': occ.status_ocorrencia.nome
                 })
         
         return jsonify(occurrences_data), 200

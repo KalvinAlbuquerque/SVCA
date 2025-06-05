@@ -49,12 +49,12 @@ a:hover {
 .main-header {
     background-color: var(--white);
     padding: 15px 0;
-    box-shadow: none; /* Remover sombra padrão */
+    box-shadow: none;
     width: 100%;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.56); /* Line 1 do Figma */
-    /* top: 119px; no Figma, mas já ajustado pelo padding/altura do header no nosso layout */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.56);
+    position: relative; /* *** IMPORTANTE: Adicione ou garanta que 'position: relative;' esteja aqui *** */
+    z-index: 1000; /* Garante que o cabeçalho esteja acima de outros elementos */
 }
-
 .main-nav {
     max-width: 1200px;
     margin: 0 auto;
@@ -1338,7 +1338,7 @@ a:hover {
 
 .dropdown-menu {
     position: absolute;
-    top: 100%;
+    top: 100%; /* Posiciona o menu abaixo do "Meu menu" */
     left: 0;
     background-color: var(--white);
     border: 1px solid var(--border-light);
@@ -1346,13 +1346,15 @@ a:hover {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     list-style: none;
     padding: 10px 0;
-    z-index: 9999; /* *** MUDANÇA AQUI: Aumentar o z-index *** */
+    z-index: 9999; /* *** IMPORTANTE: Garante que o menu esteja acima de tudo *** */
     min-width: 200px;
 }
+
 
 .dropdown-menu li {
     padding: 8px 15px;
 }
+
 
 .dropdown-menu li a {
     color: var(--text-dark);
@@ -2587,3 +2589,118 @@ a:hover {
 .voltar-link:hover {
   text-decoration: underline;
 }
+
+main-area {
+  display: flex; /* Habilita o layout flexbox */
+  justify-content: space-between; /* Espaço entre o mapa e o botão */
+  align-items: center; /* Alinha verticalmente */
+  margin-bottom: 20px; /* Adiciona margem abaixo */
+}
+
+.map-container {
+  flex: 1; /* Ocupa o máximo de espaço possível */
+  margin-right: 20px; /* Espaço entre o mapa e o botão */
+}
+
+.btn-floating {
+  position: static; /* Remove o posicionamento fixo */
+  margin-top: 0; /* Remove a margem superior */
+}
+
+/* Nova área para mapa e botão na homepage */
+.map-and-button-area {
+    display: flex;
+    flex-direction: column; /* Coloca o mapa e o botão em coluna por padrão */
+    flex-grow: 1; /* Permite que ocupe o espaço restante */
+    gap: 20px; /* Espaço entre o mapa e o botão */
+    position: relative; /* Para posicionamento de elementos internos se precisar */
+    /* top, bottom, left, right podem ser ajustados se precisar de posição fixa aqui */
+    /* width: 100%;  garante que ele ocupe a largura */
+}
+
+/* Ajuste para a main-map-area dentro do novo container */
+.main-map-area {
+    flex-grow: 1;
+    background-color: var(--grey-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    color: var(--text-dark);
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 78px;
+    text-align: center;
+    height: 600px; /* Reduzi um pouco a altura para que o botão caiba ao lado ou abaixo */
+    /* Se quiser que ele ocupe o espaço restante, pode ser min-height: 400px; e flex-grow: 1; */
+}
+
+/* Novo estilo para o botão "Registrar ocorrência" na HomePage */
+/* Remove o posicionamento absoluto e o coloca em fluxo normal */
+.btn-floating-homepage {
+    background-color: var(--primary-blue);
+    color: var(--white);
+    padding: 15px 25px;
+    border-radius: 30px;
+    font-size: 30px;
+    font-weight: 600;
+    line-height: 37px;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
+    width: 468px; /* Mantém a largura do Figma */
+    height: 66px; /* Mantém a altura do Figma */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-self: center; /* Centraliza o botão dentro do flex container */
+    margin-top: 20px; /* Espaço entre o mapa e o botão */
+}
+
+.btn-floating-homepage:hover {
+    background-color: var(--dark-blue);
+    transform: translateY(-2px);
+}
+
+/* Ajuste para a responsividade da homepage */
+@media (max-width: 992px) {
+    /* ... (outros ajustes de responsividade da homepage) ... */
+
+    .map-and-button-area {
+        flex-direction: column; /* Em telas menores, o mapa e o botão ficam em coluna */
+        gap: 20px;
+    }
+
+    .main-map-area {
+        height: 400px; /* Altura menor para telas menores */
+    }
+
+    .btn-floating-homepage {
+        width: 90%; /* Ajusta largura em telas menores */
+        max-width: 400px; /* Limita a largura máxima */
+        font-size: 1.2rem;
+        padding: 15px 20px;
+        position: static; /* Garante que não haja posicionamento fixo */
+        margin-top: 20px; /* Adiciona margem entre o mapa e o botão */
+        align-self: center; /* Centraliza o botão */
+    }
+}
+
+/* Para o menu suspenso do cabeçalho cobrir o mapa */
+.main-header {
+    z-index: 1000; /* Garante que o header esteja acima de tudo */
+    position: relative; /* Necessário para z-index funcionar corretamente */
+}
+
+.dropdown-menu {
+    z-index: 9999; /* Garante que o dropdown esteja acima de tudo */
+    position: absolute; /* Já estava, mas importante reforçar */
+}
+
+/* O mapa e seus controles devem ter um z-index menor que o header/dropdown */
+/* Geralmente, não é necessário setar um z-index explícito para o mapa,
+   pois ele tende a ter um menor por padrão. */
+/* Se ainda houver sobreposição, você pode tentar: */
+/* .leaflet-container { z-index: 1; } */
+/* .leaflet-control-container { z-index: 2; } */

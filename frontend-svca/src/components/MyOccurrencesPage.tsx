@@ -65,7 +65,12 @@ const MyOccurrencesPage: React.FC = () => {
         {!loading && !error && occurrences.length > 0 && (
           <div className="occurrences-list">
             {occurrences.map((occ) => (
-              <div key={occ.id} className="occurrence-card">
+               <div
+              key={occ.id}
+              className="occurrence-card"
+              onClick={() => navigate(`/ocorrencia/${occ.id}`)} // *** VERIFIQUE ESTA LINHA ***
+              style={{ cursor: 'pointer' }}
+            >
                 <h2 className="occurrence-card-title">{occ.titulo}</h2>
                 <p className="occurrence-card-status">Status: <span>{occ.status}</span></p>
                 <p className="occurrence-card-address">Endereço: {occ.endereco}</p>
@@ -78,7 +83,6 @@ const MyOccurrencesPage: React.FC = () => {
                     ))}
                   </div>
                 )}
-                {/* Adicione um botão para ver detalhes ou editar se quiser */}
               </div>
             ))}
           </div>
