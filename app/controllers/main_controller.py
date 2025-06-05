@@ -274,7 +274,18 @@ def get_all_occurrences():
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
 
-    occurrences = Ocorrencia.query.all()
+    search_term = request.args.get('search', '').strip() # Pega o termo de busca da query string
+    occurrences_query = Ocorrencia.query
+
+    if search_term:
+        # Filtra por titulo, endereco, ou nome do usuario
+        occurrences_query = occurrences_query.join(Usuario).filter(db.or_(
+            Ocorrencia.titulo.ilike(f'%{search_term}%'),
+            Ocorrencia.endereco.ilike(f'%{search_term}%'),
+            Usuario.nome.ilike(f'%{search_term}%')
+        ))
+
+    occurrences = occurrences_query.all()
     occurrences_data = []
     for occ in occurrences:
         images_urls = [img.url for img in occ.imagens]
@@ -291,10 +302,10 @@ def get_all_occurrences():
     return jsonify(occurrences_data), 200
 
 @main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-@roles_required(['Administrador', 'Moderador']) # Acesso para Moderador e Administrador
+@roles_required(['Administrador', 'Moderador'])
 def manage_occurrence(occurrence_id):
     if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
+        return '', 200
 
     occurrence = Ocorrencia.query.get(occurrence_id)
     if not occurrence:
@@ -302,6 +313,7 @@ def manage_occurrence(occurrence_id):
 
     if request.method == 'GET':
         images_urls = [img.url for img in occurrence.imagens]
+        orgao_nome = occurrence.orgao_responsavel.nome if occurrence.orgao_responsavel else None
         return jsonify({
             'id': occurrence.id,
             'titulo': occurrence.titulo,
@@ -314,12 +326,14 @@ def manage_occurrence(occurrence_id):
             'usuario_id': occurrence.usuario_id,
             'usuario_nome': occurrence.usuario.nome if occurrence.usuario else 'N/A',
             'orgao_responsavel_id': occurrence.orgao_responsavel_id,
+            'orgao_responsavel_nome': orgao_nome, # Adicione para o frontend
             'tipo_pontuacao_id': occurrence.tipo_pontuacao_id,
             'imagens': images_urls,
         }), 200
 
     elif request.method == 'PUT':
-        data = request.get_json()
+        data = request.get_json() # Use request.get_json() para dados JSON
+        
         try:
             if 'titulo' in data:
                 occurrence.titulo = data['titulo']
@@ -327,27 +341,39 @@ def manage_occurrence(occurrence_id):
                 occurrence.descricao = data['descricao']
             if 'endereco' in data:
                 occurrence.endereco = data['endereco']
+            
+            # Status
             if 'status_id' in data:
-                occurrence.status_id = data['status_id']
-                # Se o status for 'Fechada com solução', atribui data_finalizacao e pontos
-                if StatusOcorrencia.query.get(data['status_id']).nome == 'Fechada com solução':
-                    occurrence.data_finalizacao = datetime.now().date()
-                    # Lógica para atribuir TipoPontuacao (ex: OcorrenciaSolucionada)
-                    tipo_pontuacao_solucionada = TipoPontuacao.query.filter_by(nome='OcorrenciaSolucionada').first()
-                    if tipo_pontuacao_solucionada:
-                        occurrence.tipo_pontuacao_id = tipo_pontuacao_solucionada.id
-            if 'orgao_responsavel_id' in data:
-                occurrence.orgao_responsavel_id = data['orgao_responsavel_id']
+                new_status_id = int(data['status_id'])
+                if new_status_id != occurrence.status_id: # Só atualiza se for diferente
+                    occurrence.status_id = new_status_id
+                    new_status = StatusOcorrencia.query.get(new_status_id)
+                    if new_status and new_status.nome == 'Fechada com solução':
+                        occurrence.data_finalizacao = datetime.now().date()
+                        tipo_pontuacao_solucionada = TipoPontuacao.query.filter_by(nome='OcorrenciaSolucionada').first()
+                        if tipo_pontuacao_solucionada:
+                            occurrence.tipo_pontuacao_id = tipo_pontuacao_solucionada.id
+                    elif new_status and new_status.nome != 'Fechada com solução':
+                        occurrence.data_finalizacao = None # Limpa data de finalização
+                        occurrence.tipo_pontuacao_id = None # Limpa tipo de pontuação
+
+            # Órgão Responsável
+            if 'orgao_responsavel_id' in data: # Pode vir como null se "Nenhum" for selecionado
+                orgao_id_val = data['orgao_responsavel_id']
+                if orgao_id_val is not None and orgao_id_val != '': # Permite null ou vazio para desassociar
+                    occurrence.orgao_responsavel_id = int(orgao_id_val)
+                else:
+                    occurrence.orgao_responsavel_id = None # Desassocia
 
             db.session.commit()
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': f'Erro ao atualizar ocorrência: {str(e)}'}), 500
+            print(f"Erro ao atualizar ocorrência: {e}")
+            return jsonify({'error': f'Ocorreu um erro ao atualizar a ocorrência: {str(e)}'}), 500
 
     elif request.method == 'DELETE':
         try:
-            # Apagar imagens associadas primeiro (cascade="all, delete-orphan" no modelo já ajuda)
             db.session.delete(occurrence)
             db.session.commit()
             return jsonify({'message': 'Ocorrência deletada com sucesso!'}), 200
@@ -426,7 +452,7 @@ def manage_user(user_id):
             return jsonify({'message': 'Usuário atualizado com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': f'Erro ao atualizar usuário: {str(e)}'}), 500
+            return jsonify({'error': f'Ocorreu um erro ao atualizar o usuário: {str(e)}'}), 500
 
     elif request.method == 'DELETE':
         try:
@@ -443,7 +469,16 @@ def get_all_orgaos():
     if request.method == 'OPTIONS':
         return '', 200 # CORS preflight
 
-    orgaos = OrgaoResponsavel.query.all()
+    search_term = request.args.get('search', '').strip() # Add search term parameter
+    orgaos_query = OrgaoResponsavel.query
+
+    if search_term:
+        orgaos_query = orgaos_query.filter(db.or_(
+            OrgaoResponsavel.nome.ilike(f'%{search_term}%'),
+            OrgaoResponsavel.email.ilike(f'%{search_term}%')
+        ))
+
+    orgaos = orgaos_query.all()
     orgaos_data = []
     for orgao in orgaos:
         orgaos_data.append({
@@ -526,7 +561,6 @@ def manage_orgao(orgao_id):
             db.session.rollback()
             return jsonify({'error': f'Erro ao deletar órgão responsável: {str(e)}'}), 500
 
-# Adicione estas rotas para buscar status e perfis
 @main_bp.route('/status-ocorrencias', methods=['GET', 'OPTIONS'])
 @login_required 
 def get_status_options():

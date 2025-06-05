@@ -12,9 +12,11 @@ import PoliciesPage from './components/PoliciesPage';
 import AboutUsPage from './components/AboutUsPage';
 import ManageAccountPage from './components/ManageAccountPage';
 import ManageOccurrencesPage from './components/ManageOccurrencesPage';
-import ManageUsersPage from './components/ManagerUsersPage';
-import ManageOrganizationsPage from './components/ManageOrganizationsPage'; // Componente de listagem
-import OrganizationFormPage from './components/OrganizationFormPage'; // Novo componente de formulário
+import ManageUsersPage from './components/ManageUsersPage';
+import ManageOrganizationsPage from './components/ManageOrganizationsPage';
+import OrganizationFormPage from './components/OrganizationFormPage';
+import ContactPage from './components/ContactPage'; // Importe a ContactPage
+import ViewOccurrencePage from './components/ViewOccurrencePage'; // Importe a ViewOccurrencePage
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -67,7 +69,8 @@ const App: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/politicas" element={<PoliciesPage />} />
         <Route path="/sobre-nos" element={<AboutUsPage />} />
-        
+        <Route path="/contato" element={<ContactPage />} /> {/* Rota para a ContactPage */}
+
         {/* Rotas protegidas (apenas para usuários autenticados) */}
         <Route
           path="/dashboard"
@@ -90,9 +93,10 @@ const App: React.FC = () => {
         {(userProfile === 'Moderador' || userProfile === 'Administrador') ? (
           <>
             <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
-            <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} /> {/* Tela de listagem */}
-            <Route path="/gerenciar-orgaos/cadastrar" element={<OrganizationFormPage />} /> {/* Tela de cadastro */}
-            <Route path="/gerenciar-orgaos/editar/:id" element={<OrganizationFormPage />} /> {/* Tela de edição */}
+            <Route path="/gerenciar-ocorrencias/:id" element={<ViewOccurrencePage />} /> {/* Rota para ViewOccurrencePage */}
+            <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
+            <Route path="/gerenciar-orgaos/cadastrar" element={<OrganizationFormPage />} />
+            <Route path="/gerenciar-orgaos/editar/:id" element={<OrganizationFormPage />} />
           </>
         ) : null}
 
@@ -100,7 +104,6 @@ const App: React.FC = () => {
         {userProfile === 'Administrador' ? (
           <Route path="/gerenciar-usuarios" element={<ManageUsersPage />} />
         ) : null}
-
 
         {/* Redirecionar para o dashboard caso tente acessar rotas restritas sem permissão */}
         {isAuthenticated && userProfile === 'Usuario' && (
@@ -117,6 +120,9 @@ const App: React.FC = () => {
         )}
         {isAuthenticated && userProfile !== 'Administrador' && (
              <Route path="/gerenciar-usuarios" element={<Navigate to="/dashboard" replace />} />
+        )}
+        {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
+             <Route path="/gerenciar-ocorrencias/:id" element={<Navigate to="/dashboard" replace />} />
         )}
 
       </Routes>

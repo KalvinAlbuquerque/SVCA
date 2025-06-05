@@ -2087,3 +2087,273 @@ a:hover {
     margin-top: 10px; /* Adiciona espaço entre os botões */
     width: 100%; /* Ocupa a largura total */
 }
+
+/* Estilos para a página de contato */
+.register-occurrence-form textarea {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-input);
+    border-radius: 11px;
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-family: var(--font-primary);
+    min-height: 100px; /* Altura mínima para o textarea */
+    resize: vertical; /* Permite redimensionamento vertical */
+}
+
+/* Estilos para a página de visualização de ocorrência */
+.occurrence-details {
+  padding: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.occurrence-details h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: var(--text-dark);
+}
+
+.occurrence-details p {
+  margin-bottom: 5px;
+  color: var(--text-medium);
+}
+
+.occurrence-details strong {
+  color: var(--text-dark);
+}
+
+.occurrence-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.occurrence-images img {
+  max-width: 200px;
+  height: auto;
+  border-radius: 5px;
+  box-shadow: var(--shadow-input);
+}
+
+/* Estilos para a página de Contato */
+.contact-info-section {
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    text-align: left; /* Alinha o texto à esquerda */
+    line-height: 1.6;
+}
+
+.contact-info-section p {
+    margin-bottom: 5px;
+}
+
+.section-title { /* Título para a seção "Equipe" */
+    font-size: 1.8rem;
+    color: var(--primary-blue);
+    margin-top: 30px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    border-bottom: 1px solid #eee; /* Linha abaixo do título */
+    padding-bottom: 10px;
+    text-align: left; /* Alinha o título à esquerda */
+}
+
+.team-section {
+    background-color: var(--grey-bg); /* Cor de fundo cinza da imagem */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px; /* Altura da caixa da equipe */
+    width: 100%;
+    border-radius: 8px; /* Arredondamento dos cantos */
+    margin-bottom: 20px; /* Espaço abaixo da seção */
+}
+
+.team-section .team-placeholder {
+    font-size: 3rem; /* Tamanho do texto "Equipe" */
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* Responsividade para a página de contato (seções) */
+@media (max-width: 768px) {
+    .contact-info-section {
+        font-size: 1rem;
+    }
+    .section-title {
+        font-size: 1.5rem;
+    }
+    .team-section {
+        min-height: 200px;
+    }
+    .team-section .team-placeholder {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .team-section {
+        min-height: 150px;
+    }
+    .team-section .team-placeholder {
+        font-size: 1.5rem;
+    }
+}
+
+/* src/index.css */
+
+/* ... (seus estilos existentes) ... */
+
+/* Estilos para a caixa da página de visualização/edição de ocorrência */
+.view-occurrence-box {
+    max-width: 900px; /* Largura um pouco maior para o formulário */
+    padding: 40px;
+    /* Herda outros estilos de .manage-box ou .register-occurrence-box */
+}
+
+/* Container principal para o layout de grade dos campos */
+.occurrence-view-form .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas para campos */
+    gap: 20px 30px; /* Espaçamento entre linhas e colunas */
+    margin-bottom: 30px; /* Espaço antes do botão Salvar/Voltar */
+}
+
+/* Estilos gerais para labels dentro do formulário de visualização/edição */
+.occurrence-view-form .form-group label {
+    font-weight: 700;
+    font-size: 1.1rem; /* Um pouco maior que o padrão */
+    color: var(--text-dark);
+    margin-bottom: 5px;
+    display: block; /* Garante que a label fique em sua própria linha */
+}
+
+/* Estilos gerais para inputs, selects e textareas dentro do formulário */
+.occurrence-view-form .form-group input,
+.occurrence-view-form .form-group select,
+.occurrence-view-form .form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-light);
+    border-radius: 11px; /* Arredondamento como os outros inputs de formulário */
+    box-shadow: var(--shadow-input); /* Sombra como nos outros inputs de formulário */
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-family: var(--font-primary);
+    min-height: 47px; /* Altura mínima consistente */
+}
+
+/* Estilo para campos somente leitura (disabled) */
+.occurrence-view-form .form-group input[disabled],
+.occurrence-view-form .form-group select[disabled],
+.occurrence-view-form .form-group textarea[disabled] {
+    background-color: #f0f0f0; /* Fundo cinza claro */
+    cursor: not-allowed; /* Cursor de "não permitido" */
+}
+
+/* Estilo específico para o campo de descrição (ocupa largura total) */
+.occurrence-view-form .full-width-description {
+    grid-column: 1 / -1; /* Faz este item ocupar todas as colunas da grade */
+    margin-top: 20px; /* Adiciona um pouco de espaço acima se não for o primeiro item na linha */
+}
+
+.occurrence-view-form .full-width-description textarea {
+    min-height: 150px; /* Altura maior para a descrição */
+    resize: vertical; /* Permite redimensionar verticalmente */
+}
+
+/* Estilos para a seção de exibição de imagens */
+.occurrence-view-form .image-display-group {
+    grid-column: 1 / -1; /* Ocupa todas as colunas da grade */
+    margin-top: 20px;
+}
+
+.occurrence-view-form .current-images-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 15px; /* Espaço abaixo das imagens */
+    padding: 10px;
+    border: 1px dashed var(--border-light); /* Borda tracejada */
+    border-radius: 8px;
+    min-height: 80px; /* Altura mínima para a área de imagens */
+    align-items: center; /* Centraliza as imagens verticalmente */
+    justify-content: center; /* Centraliza as imagens horizontalmente */
+}
+
+.occurrence-view-form .current-image-thumbnail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover; /* Recorta a imagem para preencher o espaço */
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Pequena sombra */
+    border: 1px solid #ddd;
+}
+
+.occurrence-view-form .form-text-info {
+    font-size: 0.85rem;
+    color: var(--text-medium);
+    margin-top: 5px;
+    display: block;
+}
+
+
+/* Responsividade para o layout em grade */
+@media (max-width: 768px) {
+    .occurrence-view-form .form-grid {
+        grid-template-columns: 1fr; /* Muda para uma coluna em telas menores */
+        gap: 15px; /* Reduz o espaçamento */
+    }
+    .occurrence-view-form .full-width-description,
+    .occurrence-view-form .image-display-group {
+        margin-top: 15px; /* Ajusta margem superior se necessário */
+    }
+}
+
+@media (max-width: 480px) {
+    .view-occurrence-box {
+        padding: 20px; /* Reduz o padding em telas muito pequenas */
+    }
+    .occurrence-view-form .form-group input,
+    .occurrence-view-form .form-group select,
+    .occurrence-view-form .form-group textarea {
+        padding: 10px; /* Reduz padding dos inputs */
+        min-height: 40px; /* Reduz altura mínima */
+    }
+    .occurrence-view-form .current-image-thumbnail {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+/* Reajuste para os botões de ação do formulário (sempre no final) */
+.modal-actions { /* Reutiliza esta classe que já existia para modais */
+  display: flex;
+  justify-content: flex-end; /* Alinha os botões à direita */
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary-modal {
+    width: auto; /* Permite que os botões tenham largura automática */
+    flex-grow: 0; /* Impede que cresçam e ocupem todo o espaço */
+}
+
+@media (max-width: 480px) {
+    .modal-actions {
+        flex-direction: column; /* Botões em coluna em telas pequenas */
+        gap: 10px;
+    }
+    .modal-actions .btn-primary,
+    .modal-actions .btn-secondary-modal {
+        width: 100%; /* Ocupa a largura total */
+    }
+}

@@ -80,13 +80,6 @@ const ManageOccurrencesPage: React.FC = () => {
     fetchStatusOptions();
   }, [navigate]);
 
-  const openModal = (occurrence: Occurrence) => {
-    setSelectedOccurrence(occurrence);
-    // Encontra o ID do status atual com base no nome do status
-    const currentStatus = statusOptions.find(s => s.nome === occurrence.status);
-    setCurrentStatusId(currentStatus ? currentStatus.id : null);
-    setIsModalOpen(true);
-  };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -181,21 +174,22 @@ const ManageOccurrencesPage: React.FC = () => {
         )}
 
         {occurrences.length > 0 && (
-          <div className="items-list">
+        <div className="items-list">
             {occurrences.map((occ) => (
-              <div key={occ.id} className="item-card">
+            <div
+                key={occ.id}
+                className="item-card"
+                onClick={() => navigate(`/gerenciar-ocorrencias/${occ.id}`)} // <--- ADICIONE ESTA LINHA
+                style={{ cursor: 'pointer' }} // <--- ADICIONE ESTA LINHA PARA INDICAÇÃO VISUAL
+            >
                 <h2 className="item-card-title">{occ.titulo}</h2>
                 <p>Usuário: {occ.usuario_nome}</p>
                 <p>Status: <span>{occ.status}</span></p>
                 <p>Endereço: {occ.endereco}</p>
                 <p>Data: {occ.data_registro}</p>
-                <div className="item-actions">
-                  <button className="btn-edit" onClick={() => openModal(occ)}>Detalhes/Editar</button>
-                  {/* Você pode adicionar um botão de delete aqui também, se desejar */}
-                </div>
-              </div>
+            </div>
             ))}
-          </div>
+        </div>
         )}
 
         {isModalOpen && selectedOccurrence && (

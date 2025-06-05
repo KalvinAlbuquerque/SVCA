@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, userProfile = 
       <nav className="main-nav">
         <ul className="nav-list">
           <li className="nav-item"><Link to="/">Início</Link></li>
-          <li className="nav-item"><Link to="#">Contato</Link></li>
+          <li className="nav-item"><Link to="/contato">Contato</Link></li>
           <li className="nav-item"><Link to="/sobre-nos">Sobre Nós</Link></li>
           
           {isAuthenticated && (
