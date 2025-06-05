@@ -7,10 +7,10 @@ import Dashboard from './components/Dashboard';
 import RegisterPage from './components/RegisterPage';
 import HomePage from './components/HomePage';
 import RegisterOccurrencePage from './components/RegisterOccurrencePage';
-import MyOccurrencesPage from './components/MyOccurrencesPage'; 
-import PoliciesPage from './components/PoliciesPage'; // Importe PoliciesPage
-import AboutUsPage from './components/AboutUsPage'; // Importe AboutUsPage
-
+import MyOccurrencesPage from './components/MyOccurrencesPage';
+import PoliciesPage from './components/PoliciesPage';
+import AboutUsPage from './components/AboutUsPage';
+import ManageAccountPage from './components/ManageAccountPage'; // Importe o novo componente
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -53,6 +53,8 @@ const App: React.FC = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginBox onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/politicas" element={<PoliciesPage />} />
+        <Route path="/sobre-nos" element={<AboutUsPage />} />
         
         {/* Rotas protegidas (apenas para usuários autenticados) */}
         <Route
@@ -64,11 +66,13 @@ const App: React.FC = () => {
           element={isAuthenticated ? <RegisterOccurrencePage /> : <Navigate to="/login" replace />}
         />
         <Route
-          path="/minhas-ocorrencias" // Nova rota para minhas ocorrências
+          path="/minhas-ocorrencias"
           element={isAuthenticated ? <MyOccurrencesPage /> : <Navigate to="/login" replace />}
         />
-        <Route path="/politicas" element={<PoliciesPage />} /> {/* Nova rota para Políticas de Uso */}
-        <Route path="/sobre-nos" element={<AboutUsPage />} /> {/* Nova rota para Sobre Nós */}
+        <Route
+          path="/gerenciar-conta" // Nova rota para Gerenciar Conta
+          element={isAuthenticated ? <ManageAccountPage /> : <Navigate to="/login" replace />}
+        />
         {/* Adicione outras rotas protegidas aqui */}
       </Routes>
     </Router>

@@ -8,11 +8,12 @@ from ..models.ocorrencia import Ocorrencia, StatusOcorrencia
 from ..models.coordenada import Coordenada
 from ..models.imagem import Imagem
 from ..models.perfil import Perfil
+from ..models.tipo_pontuacao import TipoPontuacao # Importe TipoPontuacao para calcular pontos
 from .. import db
 
 main_bp = Blueprint('main', __name__)
 
-# --- Funções de login, registro, dashboard, logout e register-occurrence (mantidas como estão) ---
+# --- Funções existentes (login, register, dashboard, logout, register-occurrence, get_my_occurrences) ---
 @main_bp.route('/')
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -40,7 +41,7 @@ def login():
 @main_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
-        return '', 200
+        return '', 200 # CORS preflight
     data = request.get_json()
     nome = data.get('nome')
     sobrenome = data.get('sobrenome')
@@ -157,7 +158,6 @@ def register_occurrence():
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
 
-# --- Nova rota para buscar ocorrências do usuário ---
 @main_bp.route('/my-occurrences', methods=['GET', 'OPTIONS'])
 def get_my_occurrences():
     if request.method == 'OPTIONS':
@@ -171,14 +171,10 @@ def get_my_occurrences():
     if not current_user:
         return jsonify({'error': 'Usuário não encontrado.'}), 404
 
-    # Busca todas as ocorrências associadas a este usuário
-    # .all() executa a query e retorna uma lista
-    occurrences = current_user.ocorrencias
+    occurrences = current_user.ocorrencias # Remova o .all()
 
-    # Formata as ocorrências para JSON
     occurrences_data = []
     for occ in occurrences:
-        # Pega as URLs das imagens associadas
         images_urls = [img.url for img in occ.imagens]
 
         occurrences_data.append({
@@ -186,10 +182,106 @@ def get_my_occurrences():
             'titulo': occ.titulo,
             'descricao': occ.descricao,
             'endereco': occ.endereco,
-            'data_registro': occ.data_registro.strftime('%Y-%m-%d'), # Formata a data
+            'data_registro': occ.data_registro.strftime('%Y-%m-%d'),
             'status': occ.status_ocorrencia.nome if occ.status_ocorrencia else 'N/A',
             'imagens': images_urls,
-            # Você pode adicionar mais campos conforme necessário, como coordenada
         })
 
     return jsonify(occurrences_data), 200
+
+# --- Novas rotas para Gerenciar Conta ---
+@main_bp.route('/user-profile', methods=['GET', 'OPTIONS'])
+def get_user_profile():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Você precisa estar logado para ver seu perfil.'}), 401
+
+    user = Usuario.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'Usuário não encontrado.'}), 404
+
+    # Calcula a pontuação do usuário
+    pontuacao = user.consultar_pontuacao() # O método já existe no modelo Usuario
+
+    # Divide o nome completo em Nome e Sobrenome, se possível
+    # Isso é um palpite, baseado em como você está combinando nome e sobrenome no registro
+    nome_partes = user.nome.split(' ', 1) 
+    primeiro_nome = nome_partes[0] if nome_partes else ""
+    sobrenome = nome_partes[1] if len(nome_partes) > 1 else ""
+
+    profile_data = {
+        'id': user.id,
+        'nome': primeiro_nome, # Nome (primeiro nome)
+        'sobrenome': sobrenome, # Sobrenome
+        'email': user.email,
+        'telefone': user.telefone,
+        'cpf': user.cpf if hasattr(user, 'cpf') else None, # CPF pode ser opcional no modelo
+        'apelido': user.nome, # Usando o campo 'nome' do modelo como 'apelido'
+        'perfil': user.perfil.nome if user.perfil else 'N/A',
+        'pontos': pontuacao,
+        # Adicione aqui o campo para URL do avatar, se você o tiver no modelo Usuario
+        # Ex: 'avatar_url': user.avatar_url
+    }
+    return jsonify(profile_data), 200
+
+@main_bp.route('/user-profile', methods=['PUT', 'OPTIONS'])
+def update_user_profile():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Você precisa estar logado para atualizar seu perfil.'}), 401
+
+    user = Usuario.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'Usuário não encontrado.'}), 404
+
+    data = request.get_json()
+
+    # Validação e atualização dos campos
+    # Certifique-se de validar cada campo e atualizar apenas os que são permitidos
+    try:
+        if 'nome' in data and 'sobrenome' in data:
+            nome_completo = f"{data['nome']} {data['sobrenome']}".strip()
+            user.nome = nome_completo
+        elif 'nome' in data: # Se só o nome for enviado
+            user.nome = data['nome']
+
+        if 'email' in data and data['email'] != user.email:
+            # Verificar se o novo email já está em uso por outro usuário
+            existing_email_user = Usuario.query.filter(Usuario.email == data['email'], Usuario.id != user.id).first()
+            if existing_email_user:
+                return jsonify({'error': 'Este e-mail já está em uso por outro usuário.'}), 409
+            user.email = data['email']
+
+        if 'telefone' in data:
+            user.telefone = data['telefone']
+        if 'cpf' in data:
+            # Lidar com CPF se o modelo Usuario tiver esse campo
+            if hasattr(user, 'cpf'):
+                user.cpf = data['cpf']
+        # 'apelido' na tela mapeia para 'nome' no modelo, já tratado acima
+        # if 'apelido' in data: user.nome = data['apelido']
+
+        if 'nova_senha' in data and data['nova_senha']:
+            if 'repita_sua_senha' not in data or data['nova_senha'] != data['repita_sua_senha']:
+                return jsonify({'error': 'As novas senhas não coincidem.'}), 400
+            if len(data['nova_senha']) < 6:
+                return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
+            user.redefinir_senha(data['nova_senha']) # Utiliza o método existente para hashear
+
+        # Se você tiver um campo para avatar_url no modelo Usuario
+        # if 'avatar_url' in data:
+        #     user.avatar_url = data['avatar_url']
+
+        db.session.commit()
+        return jsonify({'message': 'Perfil atualizado com sucesso!'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao atualizar perfil: {e}")
+        return jsonify({'error': f'Ocorreu um erro ao atualizar o perfil: {str(e)}'}), 500
