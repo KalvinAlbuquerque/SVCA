@@ -47,7 +47,7 @@ def seed_db():
         db.session.add_all([em_andamento_status, fechada_solucao_status, fechada_sem_solucao_status])
         click.echo('Status de ocorrência básicos adicionados.')
 
-    """ if not Usuario.query.filter_by(email='admin@example.com').first():
+    if not Usuario.query.filter_by(email='admin@example.com').first():
         # Encontre o perfil de Administrador que acabamos de criar/garantir
         admin_perfil = Perfil.query.filter_by(nome='Administrador').first()
         if admin_perfil:
@@ -55,12 +55,12 @@ def seed_db():
                 nome='Kalvin',
                 email='admin@example.com',
                 telefone='(XX)YYYYY-YYYY',
-                senha='123456', # Em produção, use um hash
+                senha_plana='123456', # Em produção, use um hash
                 perfil_id=admin_perfil.id
             )
             click.echo('Usuário administrador inicial adicionado.')
         else:
-            click.echo('Erro: Perfil Administrador não encontrado para criar usuário inicial.') """
+            click.echo('Erro: Perfil Administrador não encontrado para criar usuário inicial.') 
     print(Usuario.buscar_todos())
     db.session.commit()
     click.echo('Dados iniciais inseridos com sucesso.')

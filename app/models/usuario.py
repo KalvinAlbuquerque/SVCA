@@ -12,7 +12,7 @@ class Usuario(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     telefone = db.Column(db.String(255))
-    senha = db.Column(db.String(40), nullable=False)
+    senha = db.Column(db.String(255), nullable=False) 
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=False)
 
     #Relationship
@@ -83,15 +83,18 @@ class Usuario(db.Model):
         return f"<Usuario {self.nome} ({self.email})>"
     
     @classmethod
-    def criar(cls, nome, email, telefone, senha, perfil_id):
+    def criar(cls, nome, email, telefone, senha_plana, perfil_id):
         """
         Cria um novo usuário e o salva no banco de dados.
         """
+        
+        # Hasheia a senha antes de criar o usuário
+        senha_hash = generate_password_hash(senha_plana)
         novo_usuario = cls(
             nome=nome,
             email=email,
             telefone=telefone,
-            senha=senha,
+            senha=senha_hash,
             perfil_id=perfil_id
         )
         db.session.add(novo_usuario)

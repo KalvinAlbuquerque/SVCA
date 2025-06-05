@@ -1,16 +1,23 @@
 /* src/index.css */
 
-/* Definição de Variáveis CSS para Cores */
+/* Definição de Variáveis CSS para Cores e Fontes */
 :root {
-    --primary-blue: #3B82F6;
-    --dark-blue: #2563EB;
-    --text-dark: #2c3e50;
+    --primary-blue: #008BCC; /* Novo azul principal (mais presente em botões) */
+    --secondary-blue: #0380A3; /* Azul para links/texto (como no cabeçalho) */
+    --dark-blue: #006B99;    /* Um tom mais escuro para hover do primary-blue */
+    --text-dark: #000000;    /* Cor preta para o texto principal */
     --text-medium: #666;
     --text-light: #555;
-    --border-light: #ccc;
+    --border-light: rgba(0, 0, 0, 0.19); /* Nova cor de borda para inputs */
     --white: #FFFFFF;
-    --shadow-light: rgba(0,0,0,0.1);
-    --shadow-medium: rgba(0,0,0,0.1);
+    --grey-bg: #D9D9D9; /* Cor de fundo para o mapa na homepage */
+    --light-grey-bg: #F4F4F4; /* Fundo do botão "Entrar" */
+    --shadow-input: inset -1px 3px 5.2px -1px rgba(0, 0, 0, 0.25); /* Sombra para inputs */
+    --shadow-general: rgba(0,0,0,0.1);
+    --shadow-hover: rgba(0,0,0,0.15);
+
+    /* Fontes já definidas, apenas reforçando */
+    --font-primary: 'Instrument Sans', sans-serif;
 }
 
 /* Reset CSS Básico */
@@ -21,35 +28,40 @@
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--font-primary);
     background-color: var(--white);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    color: var(--text-dark); /* Ajustado para uma cor legível no corpo */
+    color: var(--text-dark);
 }
 
 a {
     text-decoration: none;
-    color: var(--primary-blue);
+    color: var(--secondary-blue); /* Links e textos azuis usam secondary-blue */
 }
 
 a:hover {
     text-decoration: underline;
 }
 
-/* Estilos do Cabeçalho */
+/* Cabeçalho */
 .main-header {
     background-color: var(--white);
     padding: 15px 0;
-    box-shadow: 0 2px 4px var(--shadow-light);
+    box-shadow: none; /* Remover sombra padrão */
     width: 100%;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.56); /* Line 1 do Figma */
+    /* top: 119px; no Figma, mas já ajustado pelo padding/altura do header no nosso layout */
 }
 
 .main-nav {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .nav-list {
@@ -57,21 +69,98 @@ a:hover {
     display: flex;
     justify-content: flex-start;
     gap: 30px;
+    /* Remover 'Meu menu' daqui no Figma, pois ele tem % de left/right,
+       mas manter flexbox para responsividade */
 }
 
 .nav-item a {
-    color: var(--text-light); /* Ajustado para #333 que é mais escuro */
-    font-weight: 500;
-    font-size: 1rem;
+    color: var(--secondary-blue); /* Cor azul dos links de navegação */
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 20px;
     transition: color 0.3s ease;
 }
 
 .nav-item a:hover {
-    color: var(--primary-blue);
+    color: var(--primary-blue); /* Usar o primary-blue no hover */
     text-decoration: none;
 }
 
-/* Estilos do Contêiner de Login */
+/* Novo estilo para o logo no cabeçalho */
+.header-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo-container img {
+    height: 79px; /* Figma: height: 79px; imagem_2025-05-03_222956761 1 */
+    width: auto;
+}
+
+.header-logo-text {
+    font-family: var(--font-primary);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 24px;
+    color: var(--text-dark);
+}
+
+/* Botões do cabeçalho (Entrar / Registrar-se) */
+.header-auth-buttons {
+    display: flex;
+    gap: 15px; /* Espaço entre os botões */
+    align-items: center;
+}
+
+.btn-header-outline {
+    background-color: var(--light-grey-bg); /* Figma: #F4F4F4 para Entrar */
+    color: var(--text-dark); /* Figma: #000000 para Entrar */
+    padding: 8px 15px;
+    border: none; /* Remover borda, usar background para "outline" */
+    border-radius: 17px; /* Figma: 17px */
+    font-size: 24px; /* Figma: 24px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 29px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    text-decoration: none;
+    width: 214px; /* Figma: 214px */
+    height: 45px; /* Figma: 45px */
+    display: flex; /* Para centralizar o texto */
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-header-outline:hover {
+    background-color: #e0e0e0; /* Tom mais escuro no hover */
+}
+
+.btn-header-primary {
+    background-color: var(--primary-blue); /* Figma: #008BCC para Registrar-se */
+    color: var(--white); /* Figma: #FFFFFF */
+    padding: 8px 15px;
+    border: none;
+    border-radius: 17px; /* Figma: 17px */
+    font-size: 24px; /* Figma: 24px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 29px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    width: 214px; /* Figma: 214px */
+    height: 45px; /* Figma: 45px */
+    display: flex; /* Para centralizar o texto */
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-header-primary:hover {
+    background-color: var(--dark-blue);
+}
+
+
+/* Conteúdo Principal de Login (mantido similar) */
 .login-container {
     flex-grow: 1;
     display: flex;
@@ -102,6 +191,8 @@ a:hover {
     font-size: 1.8rem;
     color: var(--text-dark);
     margin-bottom: 10px;
+    font-family: var(--font-primary);
+    font-weight: 700;
 }
 
 .slogan {
@@ -109,9 +200,10 @@ a:hover {
     color: var(--text-medium);
     margin-bottom: 30px;
     line-height: 1.4;
+    font-family: var(--font-primary);
 }
 
-/* Estilos do Formulário de Login */
+/* Formulário de Login */
 .login-form {
     display: flex;
     flex-direction: column;
@@ -129,6 +221,7 @@ a:hover {
     color: var(--text-light);
     margin-bottom: 5px;
     font-weight: 500;
+    font-family: var(--font-primary);
 }
 
 .form-group input[type="email"],
@@ -140,12 +233,13 @@ a:hover {
     font-size: 1rem;
     color: var(--text-dark);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    font-family: var(--font-primary);
 }
 
 .form-group input[type="email"]:focus,
 .form-group input[type="password"]:focus {
     border-color: var(--primary-blue);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 0 3px rgba(0, 139, 204, 0.3); /* Usar primary-blue no box-shadow */
     outline: none;
 }
 
@@ -154,6 +248,7 @@ a:hover {
     font-size: 0.9rem;
     color: var(--primary-blue);
     margin-top: -10px;
+    font-family: var(--font-primary);
 }
 
 .btn-primary {
@@ -167,6 +262,7 @@ a:hover {
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     width: 100%;
+    font-family: var(--font-primary);
 }
 
 .btn-primary:hover {
@@ -178,32 +274,502 @@ a:hover {
     transform: translateY(0);
 }
 
-/* Responsividade básica */
-@media (max-width: 600px) {
+.register-prompt {
+    font-family: var(--font-primary);
+    font-size: 0.9rem;
+    color: var(--text-medium);
+    margin-top: 20px;
+}
+.register-prompt a {
+    color: var(--primary-blue);
+    font-weight: 600;
+}
+
+
+/* Estilos do Dashboard */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    flex-grow: 1;
+    background-color: var(--white);
+}
+
+.welcome-section {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    margin-bottom: 40px;
+    background-color: var(--white);
+    padding: 15px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    align-self: flex-start;
+    margin-left: 29px;
+    margin-top: 20px;
+}
+
+.profile-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.welcome-text {
+    font-size: 32px;
+    line-height: 39px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+    font-family: var(--font-primary);
+}
+
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+    width: 100%;
+    max-width: 960px;
+    margin-top: 20px;
+}
+
+.card {
+    background-color: var(--white);
+    padding: 30px;
+    border-radius: 25px;
+    box-sizing: border-box;
+    border: 1px solid var(--secondary-blue); /* Ajuste para secondary-blue como no Figma dashboard */
+    box-shadow: 0 4px 15px var(--shadow-general);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px var(--shadow-hover);
+}
+
+.card-icon {
+    width: 120px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.card h3 {
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0;
+    font-family: var(--font-primary);
+}
+
+
+/* Estilos da Página de Registro */
+.register-box {
+    max-width: 800px;
+    width: 95%;
+    padding: 40px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    border-radius: 8px;
+    background-color: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* Centraliza verticalmente o conteúdo */
+    margin: 40px auto; /* Adiciona margem superior/inferior e centraliza horizontalmente */
+}
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    padding: 0;
+    width: 100%;
+}
+
+.form-row {
+    display: flex;
+    gap: 30px;
+    width: 100%;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* Labels dos campos de registro */
+.register-form .form-group label {
+    font-family: var(--font-primary);
+    font-weight: 700; /* Figma: 700 */
+    font-size: 20px; /* Figma: 20px */
+    line-height: 24px;
+    color: var(--text-dark); /* Figma: #000000 */
+    margin-bottom: 5px;
+}
+
+/* Inputs da página de registro */
+.register-form .form-group input {
+    /* Herda estilos base, mas adiciona os específicos do Figma */
+    background: var(--white);
+    border: 1px solid var(--border-light); /* Figma: rgba(0, 0, 0, 0.19) */
+    box-shadow: var(--shadow-input); /* Figma: inset -1px 3px 5.2px -1px rgba(0, 0, 0, 0.25) */
+    border-radius: 11px; /* Figma: 11px */
+    width: 100%; /* Garante 100% da largura do form-group */
+    height: 47px; /* Figma: 47px */
+    padding: 0 15px; /* Ajusta padding para nova altura */
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+.register-form .btn-primary {
+    background: #007BB4; /* Azul específico para o botão Criar Conta */
+    border-radius: 17px; /* Figma: 17px */
+    width: 260px; /* Figma: 260px */
+    height: 50px; /* Figma: 50px */
+    font-size: 24px; /* Figma: 24px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 29px;
+    align-self: center; /* Centraliza o botão */
+    margin-top: 20px;
+}
+
+
+/* Estilos da Homepage */
+.homepage-container {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px); /* Ajuste para o tamanho do header */
+    padding: 20px;
+    position: relative;
+    background-color: var(--white);
+}
+
+.homepage-content {
+    display: flex;
+    flex-grow: 1;
+    gap: 30px;
+    margin-top: 20px; /* Espaço após o header */
+}
+
+.ranking-section {
+    flex-shrink: 0;
+    width: 320px; /* Ajuste para o ranking ter mais espaço */
+    background-color: var(--white);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: none; /* Remover borda, se o Figma não mostrar */
+}
+
+.ranking-section h2 {
+    font-size: 32px; /* Figma: 32px */
+    line-height: 39px;
+    color: var(--text-dark); /* Figma: #000000 */
+    margin-bottom: 20px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ranking-list {
+    list-style: none;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.ranking-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.38); /* Line 2 do Figma para separador */
+    /* Remove a border-bottom do último item no JS, se necessário */
+}
+
+.ranking-list li:last-child {
+    border-bottom: none;
+}
+
+.ranking-list li span:first-child { /* Para os números do ranking */
+    font-size: 32px; /* Figma: 32px */
+    font-weight: 700;
+    width: 30px; /* Espaço para o número */
+    text-align: center;
+    color: var(--text-dark);
+}
+
+.ranking-profile-icon {
+    width: 68px; /* Figma: 68px */
+    height: 61px; /* Figma: 61px */
+    border-radius: 50%;
+    background-color: #e0e0e0;
+}
+
+.ranking-item-text {
+    font-size: 16px; /* Figma: 16px */
+    font-weight: 700;
+    line-height: 20px;
+    color: var(--text-dark);
+    flex-grow: 1; /* Ocupa o espaço restante */
+}
+
+.btn-secondary {
+    background-color: var(--primary-blue); /* Figma: #008BCC */
+    color: var(--white);
+    padding: 10px 20px;
+    border: none; /* Remover borda */
+    border-radius: 17px; /* Figma: 17px */
+    font-size: 24px; /* Figma: 24px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 29px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 214px; /* Figma: 214px */
+    height: 45px; /* Figma: 45px */
+    display: flex; /* Para centralizar texto */
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-secondary:hover {
+    background-color: var(--dark-blue);
+}
+
+.main-map-area {
+    flex-grow: 1;
+    background-color: var(--grey-bg); /* Figma: #D9D9D9 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    color: var(--text-dark); /* Figma: #000000 */
+    font-size: 64px; /* Figma: 64px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 78px;
+    text-align: center;
+    height: 905px; /* Figma: 905px (ajustaremos via min-height/flex-grow em responsividade) */
+}
+
+.btn-floating {
+    position: absolute;
+    bottom: 40px; /* Figma: 905px top, 66px height -> bottom ~ 53px, usando 40px para espaçamento */
+    right: 40px;
+    background-color: var(--primary-blue); /* Figma: #008BCC */
+    color: var(--white);
+    padding: 15px 25px;
+    border-radius: 30px; /* Figma: 30px */
+    font-size: 30px; /* Figma: 30px */
+    font-weight: 600; /* Figma: 600 */
+    line-height: 37px;
+    text-decoration: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    white-space: nowrap;
+    width: 468px; /* Figma: 468px */
+    height: 66px; /* Figma: 66px */
+    display: flex; /* Para centralizar o texto */
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-floating:hover {
+    background-color: var(--dark-blue);
+    transform: translateY(-2px);
+}
+
+.homepage-footer-logo {
+    position: absolute;
+    bottom: 40px; /* Ajustado para espaçamento similar ao botão */
+    left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.homepage-footer-logo img { /* imagem_2025-05-03_222956761 1 */
+    width: 131px; /* Figma: 131px */
+    height: 99px; /* Figma: 99px */
+    object-fit: contain;
+}
+
+.homepage-footer-logo .app-logo {
+    /* Este é o estilo para a imagem 'logo.png' ou similar */
+    width: 150px; /* Usamos este no JS para o logo genérico, ajustar se houver um específico */
+    height: auto;
+}
+
+.homepage-footer-logo .slogan {
+    font-size: 14px; /* Figma: 14px */
+    font-weight: 600;
+    line-height: 17px;
+    color: var(--text-dark); /* Figma: #000000 */
+    text-align: center;
+    width: 234px; /* Figma: 234px */
+}
+
+
+/* Responsividade global */
+@media (max-width: 992px) {
     .main-nav {
-        padding: 0 10px;
+        flex-direction: column;
+        gap: 15px;
     }
     .nav-list {
-        gap: 15px;
         justify-content: center;
         flex-wrap: wrap;
+        gap: 15px;
     }
-    .login-box {
-        padding: 30px 20px;
+    .header-logo-container {
+        justify-content: center;
     }
-    .app-title {
-        font-size: 1.5rem;
+    .header-auth-buttons {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%; /* Ocupa a largura total */
     }
-    .slogan {
-        font-size: 0.9rem;
+    .btn-header-outline,
+    .btn-header-primary {
+        width: 80%; /* Botões menores em telas menores */
+        max-width: 214px; /* Mas não maiores que o original */
+    }
+
+    /* Homepage responsividade */
+    .homepage-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    .ranking-section {
+        width: 100%;
+        max-width: 400px;
+        padding: 20px;
+    }
+    .main-map-area {
+        width: 100%;
+        min-height: 400px;
+        font-size: 2.5rem;
+        height: auto; /* Remove altura fixa em responsivo */
+    }
+    .btn-floating {
+        position: relative; /* Remove o posicionamento absoluto */
+        bottom: auto;
+        right: auto;
+        margin-top: 30px; /* Adiciona margem acima */
+        width: 90%; /* Ajusta largura */
+        max-width: 400px;
+        font-size: 1.2rem;
+        padding: 15px 20px;
+    }
+    .homepage-footer-logo {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        margin-top: 30px;
+        align-items: center;
+    }
+    .homepage-footer-logo img {
+        width: 100px;
+        height: auto;
+    }
+    .homepage-footer-logo .slogan {
+        width: 80%;
     }
 }
 
-@media (max-width: 400px) {
-    .login-box {
-        margin: 0 10px;
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px 10px;
     }
-    .nav-item a {
+    .welcome-section {
+        flex-direction: column;
+        text-align: center;
+        align-self: center;
+        margin-left: 0;
+    }
+    .profile-icon {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    .welcome-text {
+        font-size: 1.5rem;
+    }
+    .dashboard-cards {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    .card {
+        padding: 20px;
+        height: 180px;
+    }
+    .card-icon {
+        width: 80px;
+    }
+    .card h3 {
+        font-size: 1rem;
+    }
+
+    /* Responsividade para o formulário de registro */
+    .register-box {
+        max-width: 95%;
+        padding: 30px 20px;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .register-form {
+        padding: 0;
+    }
+    .form-row .form-group {
+        min-width: unset;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-nav .nav-list {
+        font-size: 0.9rem; /* Reduz tamanho da fonte em nav list */
+        gap: 10px;
+    }
+    .header-logo-container img {
+        height: 50px; /* Logo menor no header */
+    }
+    .header-logo-text {
+        font-size: 1rem;
+    }
+    .btn-header-outline,
+    .btn-header-primary {
+        font-size: 1rem; /* Botões menores */
+        height: 40px;
+    }
+
+    .homepage-container {
+        padding: 10px;
+    }
+    .ranking-section {
+        padding: 15px;
+        width: 95%; /* Ocupa mais espaço em telas bem pequenas */
+    }
+    .main-map-area {
+        font-size: 1.5rem;
+        min-height: 300px;
+    }
+    .btn-floating {
         font-size: 0.9rem;
+        padding: 10px 15px;
+    }
+    .register-box {
+        padding: 20px 15px;
     }
 }

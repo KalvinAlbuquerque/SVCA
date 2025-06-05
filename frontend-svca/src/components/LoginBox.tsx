@@ -1,14 +1,20 @@
-// src/components/LoginBox.tsx
+// frontend-svca/src/components/LoginBox.tsx
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom'; // Importe Link
 
-const LoginBox: React.FC = () => {
+interface LoginBoxProps {
+  onLoginSuccess: () => void; // Função para chamar ao ter sucesso no login
+}
+
+const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null); // Clear previous messages
+    setMessage(null);
 
     if (!email || !password) {
       setMessage({ type: 'error', text: 'Por favor, preencha todos os campos.' });
@@ -16,29 +22,26 @@ const LoginBox: React.FC = () => {
     }
 
     try {
-      // Aqui você faria a chamada para a sua API Flask
-      // A URL abaixo deve ser a URL do seu backend Flask (por exemplo, http://localhost:5000/login)
-      const response = await fetch('http://127.0.0.1:5000/login', { // Altere para a URL do seu backend Flask
+      const response = await fetch('http://127.0.0.1:5000/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Importante para enviar JSON
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json(); // Assumindo que o Flask retorna JSON
+      const data = await response.json();
 
       if (response.ok) {
-        // Login bem-sucedido
         setMessage({ type: 'success', text: data.message || 'Login realizado com sucesso!' });
-        // Redirecionar ou armazenar token/sessão aqui
-        console.log("Login successful:", data);
-        // Exemplo de redirecionamento (você precisará do react-router-dom para isso)
-        // navigate('/dashboard');
+        localStorage.setItem('userName', data.user_name || 'Usuário');
+        localStorage.setItem('userId', data.user_id);
+        
+        onLoginSuccess(); // Notifica o App.tsx que o login foi bem-sucedido
+        navigate('/dashboard');
+
       } else {
-        // Login falhou
-        setMessage({ type: 'error', text: data.error || 'Email ou senha incorretos.' }); // Usando a mensagem de erro do backend
-        console.error("Login failed:", data);
+        setMessage({ type: 'error', text: data.error || 'Email ou senha incorretos.' });
       }
     } catch (error) {
       console.error("Erro na requisição de login:", error);
@@ -50,7 +53,7 @@ const LoginBox: React.FC = () => {
     <main className="login-container">
       <div className="login-box">
         <div className="logo-area">
-          <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" className="app-logo" /> {/* Adjust path as needed */}
+          <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" className="app-logo" />
         </div>
         <h1 className="app-title">Vigilância Comunitária da Água</h1>
         <p className="slogan">Promovendo o acesso a água limpa<br />em comunidades</p>
@@ -89,6 +92,10 @@ const LoginBox: React.FC = () => {
           <a href="#" className="forgot-password">Esqueceu sua senha?</a>
           <button type="submit" className="btn-primary">Entrar</button>
         </form>
+        {/* Adiciona um link para a página de registro */}
+        <p className="register-prompt">
+          Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
+        </p>
       </div>
     </main>
   );
