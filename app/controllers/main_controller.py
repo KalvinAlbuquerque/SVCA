@@ -98,11 +98,9 @@ def logout():
     session.pop('user_profile', None)
     return jsonify({'message': 'Você foi desconectado.'}), 200
 
-@main_bp.route('/register-occurrence', methods=['POST']) # REMOVIDO 'OPTIONS'
-@login_required # Apenas usuários logados podem registrar ocorrências
+@main_bp.route('/register-occurrence', methods=['POST'])
+@login_required 
 def register_occurrence():
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     user_id = session.get('user_id')
     current_user = Usuario.query.get(user_id)
     if not current_user:
@@ -111,11 +109,21 @@ def register_occurrence():
     titulo = request.form.get('titulo')
     endereco = request.form.get('endereco')
     descricao = request.form.get('descricao')
+    # NOVOS CAMPOS: Latitude e Longitude
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
     
-    if not titulo or not endereco or not descricao:
-        return jsonify({'error': 'Título, Endereço e Descrição são obrigatórios.'}), 400
+    if not titulo or not endereco or not descricao or not latitude or not longitude: # Valide também as coordenadas
+        return jsonify({'error': 'Título, Endereço, Descrição, Latitude e Longitude são obrigatórios.'}), 400
 
     try:
+        # Crie ou encontre a coordenada
+        # Para simplicidade, vamos criar uma nova coordenada para cada ocorrência.
+        # Em um sistema real, você pode querer reutilizar coordenadas existentes ou normalizá-las.
+        new_coordenada = Coordenada(latitude=float(latitude), longitude=float(longitude))
+        db.session.add(new_coordenada)
+        db.session.flush() # Para que new_coordenada.id esteja disponível
+
         status_em_andamento = StatusOcorrencia.query.filter_by(nome='Em andamento').first()
         if not status_em_andamento:
             return jsonify({'error': "Status 'Em andamento' não encontrado. Contate o administrador."}), 500
@@ -126,7 +134,8 @@ def register_occurrence():
             data_registro=datetime.now().date(),
             endereco=endereco,
             status_id=status_em_andamento.id,
-            usuario_id=current_user.id
+            usuario_id=current_user.id,
+            coordenada_id=new_coordenada.id # Associe a coordenada à ocorrência
         )
         db.session.add(nova_ocorrencia)
         db.session.flush()
@@ -156,6 +165,7 @@ def register_occurrence():
         db.session.rollback()
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
+
 
 @main_bp.route('/my-occurrences', methods=['GET']) # REMOVIDO 'OPTIONS'
 @login_required # Protege a rota
@@ -290,11 +300,9 @@ def get_all_occurrences():
         })
     return jsonify(occurrences_data), 200
 
-@main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE']) # REMOVIDO 'OPTIONS'
+@main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador', 'Moderador'])
 def manage_occurrence(occurrence_id):
-    # Removido 'if request.method == 'OPTIONS': return '', 200 # CORS preflight'
-
     occurrence = Ocorrencia.query.get(occurrence_id)
     if not occurrence:
         return jsonify({'error': 'Ocorrência não encontrada.'}), 404
@@ -302,6 +310,14 @@ def manage_occurrence(occurrence_id):
     if request.method == 'GET':
         images_urls = [img.url for img in occurrence.imagens]
         orgao_nome = occurrence.orgao_responsavel.nome if occurrence.orgao_responsavel else None
+        
+        # Obter coordenadas se existirem
+        latitude = None
+        longitude = None
+        if occurrence.coordenada: # Verifica se a ocorrência tem uma coordenada associada
+            latitude = occurrence.coordenada.latitude
+            longitude = occurrence.coordenada.longitude
+
         return jsonify({
             'id': occurrence.id,
             'titulo': occurrence.titulo,
@@ -317,6 +333,8 @@ def manage_occurrence(occurrence_id):
             'orgao_responsavel_nome': orgao_nome,
             'tipo_pontuacao_id': occurrence.tipo_pontuacao_id,
             'imagens': images_urls,
+            'latitude': latitude, # Adicione latitude
+            'longitude': longitude, # Adicione longitude
         }), 200
 
     elif request.method == 'PUT':

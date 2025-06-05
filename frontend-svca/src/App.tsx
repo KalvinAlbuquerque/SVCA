@@ -19,6 +19,8 @@ import ContactPage from './components/ContactPage';
 import ViewOccurrencePage from './components/ViewOccurrencePage';
 import ProfilePage from './components/ProfilePage'; // Importe a ProfilePage
 import RankingSemanal from './components/RankingSemanal';
+import MapComponent from './components/MapComponent'; // Você pode precisar disso mais tarde
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<string | null>(null);

@@ -1,6 +1,7 @@
 // frontend-svca/src/components/ViewOccurrencePage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import MapComponent from './MapComponent'; // Importe o componente MapComponent
 
 // Interface para os dados completos da ocorrência (como vêm do backend)
 interface OccurrenceDetail {
@@ -17,6 +18,8 @@ interface OccurrenceDetail {
   orgao_responsavel_id: number | null; // ID do órgão responsável
   orgao_responsavel_nome?: string; // Nome do órgão para exibição (se existir)
   imagens: string[]; // URLs das imagens existentes
+  latitude: number | null; // Adicione latitude
+  longitude: number | null; // Adicione longitude
 }
 
 // Interface para os dados do formulário (o que pode ser editado e enviado)
@@ -26,9 +29,7 @@ interface OccurrenceFormData {
   endereco: string;
   status_id: number;
   orgao_responsavel_id: number | null; // Pode ser null
-  // Não incluiremos aqui data_registro, data_finalizacao, usuario_id, usuario_nome
-  // pois eles são somente leitura ou gerenciados pelo backend.
-  // Também não incluiremos 'imagens' ou 'new_images' diretamente aqui para a requisição PUT de JSON.
+  // latitude e longitude não são editáveis aqui, apenas exibidos
 }
 
 // Interfaces para as opções de dropdown
@@ -74,7 +75,7 @@ const ViewOccurrencePage: React.FC = () => {
           throw new Error(errorData.error || 'Falha ao buscar detalhes da ocorrência.');
         }
         const occurrenceData: OccurrenceDetail = await occurrenceResponse.json();
-        setOccurrence(occurrenceData); // Armazena os dados completos para exibição (ex: data_registro, usuario_nome)
+        setOccurrence(occurrenceData);
 
         // Busca as opções de status
         const statusResponse = await fetch('http://localhost:5000/status-ocorrencias', { credentials: 'include' });
@@ -115,11 +116,10 @@ const ViewOccurrencePage: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm(prevForm => {
-      if (!prevForm) return null; // Garante que prevForm não é nulo
+      if (!prevForm) return null;
 
-      // Converte para número se for campo de ID
       const parsedValue = (name === 'status_id' || name === 'orgao_responsavel_id')
-        ? (value === '' ? null : Number(value)) // Trata option vazia como null para IDs
+        ? (value === '' ? null : Number(value))
         : value;
 
       return {
@@ -143,14 +143,14 @@ const ViewOccurrencePage: React.FC = () => {
       const response = await fetch(`http://localhost:5000/occurrence/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json', // Enviando JSON
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           titulo: form.titulo,
           descricao: form.descricao,
           endereco: form.endereco,
           status_id: form.status_id,
-          orgao_responsavel_id: form.orgao_responsavel_id, // Pode ser null
+          orgao_responsavel_id: form.orgao_responsavel_id,
         }),
         credentials: 'include',
       });
@@ -159,9 +159,8 @@ const ViewOccurrencePage: React.FC = () => {
 
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Ocorrência atualizada com sucesso!' });
-        // Opcional: Refetch a ocorrência para exibir quaisquer mudanças no backend (ex: data_finalizacao)
         const updatedOccurrence = await fetch(`http://localhost:5000/occurrence/${id}`, { method: 'GET', credentials: 'include' }).then(res => res.json());
-        setOccurrence(updatedOccurrence); // Atualiza os dados de exibição da ocorrência
+        setOccurrence(updatedOccurrence);
         setTimeout(() => setMessage(null), 3000);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao atualizar ocorrência.' });
@@ -180,14 +179,14 @@ const ViewOccurrencePage: React.FC = () => {
     return <main className="manage-page-container"><p className="error-message">{error}</p></main>;
   }
 
-  if (!occurrence || !form) { // Verifica se ambos occurrence e form foram carregados
+  if (!occurrence || !form) {
     return <main className="manage-page-container"><p>Ocorrência não encontrada ou dados incompletos.</p></main>;
   }
 
   return (
     <main className="manage-page-container">
-      <div className="manage-box view-occurrence-box"> {/* Adiciona uma classe específica para esta página */}
-        <h1 className="manage-title">Ocorrência #{occurrence.id}</h1> {/* Título conforme a imagem */}
+      <div className="manage-box view-occurrence-box">
+        <h1 className="manage-title">Ocorrência #{occurrence.id}</h1>
 
         {message && (
           <div className={`message ${message.type}`}>
@@ -195,14 +194,14 @@ const ViewOccurrencePage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="occurrence-view-form"> {/* Form para agrupar campos */}
-          <div className="form-grid"> {/* Grid para layout em duas colunas */}
+        <form onSubmit={handleSubmit} className="occurrence-view-form">
+          <div className="form-grid">
             <div className="form-group">
               <label htmlFor="status_id">Status</label>
               <select
                 id="status_id"
                 name="status_id"
-                value={form.status_id || ''} // Use '' para a opção "Selecione..."
+                value={form.status_id || ''}
                 onChange={handleChange}
                 required
               >
@@ -232,7 +231,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="data_registro"
                 name="data_registro"
-                value={occurrence.data_registro} // Somente leitura
+                value={occurrence.data_registro}
                 readOnly
                 disabled
               />
@@ -257,7 +256,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="data_finalizacao"
                 name="data_finalizacao"
-                value={occurrence.data_finalizacao || 'N/A'} // Somente leitura
+                value={occurrence.data_finalizacao || 'N/A'}
                 readOnly
                 disabled
               />
@@ -269,7 +268,7 @@ const ViewOccurrencePage: React.FC = () => {
                 type="text"
                 id="usuario_nome"
                 name="usuario_nome"
-                value={occurrence.usuario_nome || 'N/A'} // Somente leitura
+                value={occurrence.usuario_nome || 'N/A'}
                 readOnly
                 disabled
               />
@@ -280,7 +279,7 @@ const ViewOccurrencePage: React.FC = () => {
               <select
                 id="orgao_responsavel_id"
                 name="orgao_responsavel_id"
-                value={form.orgao_responsavel_id || ''} // Use '' para a opção "Nenhum"
+                value={form.orgao_responsavel_id || ''}
                 onChange={handleChange}
               >
                 <option value="">Nenhum</option>
@@ -290,8 +289,7 @@ const ViewOccurrencePage: React.FC = () => {
               </select>
             </div>
             
-            {/* Seção de Imagens - Simplificada para não lidar com upload real via PUT da ocorrência */}
-            <div className="form-group image-display-group"> {/* Renomeado para refletir que é mais para display */}
+            <div className="form-group image-display-group">
                 <label>Imagens</label>
                 <div className="current-images-container">
                     {occurrence.imagens.length > 0 ? (
@@ -302,12 +300,9 @@ const ViewOccurrencePage: React.FC = () => {
                         <p>Nenhuma imagem existente.</p>
                     )}
                 </div>
-                {/* O botão '+' da imagem sugere upload, mas a funcionalidade de adicionar/remover imagens
-                    em uma ocorrência existente via PUT complexifica muito o backend para essa etapa.
-                    Pode ser implementado como uma funcionalidade separada de upload de imagens. */}
                 <small className="form-text-info">As imagens são gerenciadas separadamente. Para adicionar ou remover, utilize a interface de gerenciamento de arquivos se disponível.</small>
             </div>
-          </div> {/* Fim do form-grid */}
+          </div>
 
           <div className="form-group full-width-description">
             <label htmlFor="descricao">Descrição</label>
@@ -322,7 +317,20 @@ const ViewOccurrencePage: React.FC = () => {
             ></textarea>
           </div>
 
-          <div className="modal-actions"> {/* Reutiliza classes para botões de ação */}
+          {/* Adicione o MapComponent aqui, se as coordenadas estiverem disponíveis */}
+          {occurrence.latitude !== null && occurrence.longitude !== null && (
+            <div className="form-group full-width-map" style={{ marginBottom: '20px' }}>
+              <label>Localização no Mapa</label>
+              <MapComponent 
+                latitude={occurrence.latitude} 
+                longitude={occurrence.longitude} 
+                popupText={occurrence.endereco} 
+                zoom={15} // Ajuste o zoom conforme necessário
+              />
+            </div>
+          )}
+
+          <div className="modal-actions">
             <button type="submit" className="btn-primary">Salvar</button>
             <button type="button" className="btn-secondary-modal" onClick={() => navigate('/gerenciar-ocorrencias')}>Voltar</button>
           </div>

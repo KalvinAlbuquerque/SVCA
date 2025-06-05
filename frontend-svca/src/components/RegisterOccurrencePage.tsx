@@ -1,3 +1,4 @@
+// frontend-svca/src/components/RegisterOccurrencePage.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +7,8 @@ const RegisterOccurrencePage: React.FC = () => {
   const [endereco, setEndereco] = useState<string>('');
   const [descricao, setDescricao] = useState<string>('');
   const [imagens, setImagens] = useState<File[]>([]);
+  const [latitude, setLatitude] = useState<number | null>(null); // Novo estado para latitude
+  const [longitude, setLongitude] = useState<number | null>(null); // Novo estado para longitude
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const navigate = useNavigate();
 
@@ -15,12 +18,39 @@ const RegisterOccurrencePage: React.FC = () => {
     }
   };
 
+  const geocodeAddress = async () => {
+    if (!endereco) {
+      setMessage({ type: 'error', text: 'Por favor, insira um endereço para obter as coordenadas.' });
+      return;
+    }
+    try {
+      // Usando Nominatim do OpenStreetMap para geocodificação
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(endereco)}`);
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        setLatitude(parseFloat(data[0].lat));
+        setLongitude(parseFloat(data[0].lon));
+        setMessage({ type: 'success', text: 'Coordenadas obtidas com sucesso!' });
+      } else {
+        setMessage({ type: 'error', text: 'Endereço não encontrado. Por favor, seja mais específico.' });
+        setLatitude(null);
+        setLongitude(null);
+      }
+    } catch (error) {
+      console.error("Erro ao geocodificar endereço:", error);
+      setMessage({ type: 'error', text: 'Erro ao obter coordenadas. Tente novamente mais tarde.' });
+      setLatitude(null);
+      setLongitude(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
-    if (!titulo || !endereco || !descricao) {
-      setMessage({ type: 'error', text: 'Título, Endereço e Descrição são obrigatórios.' });
+    if (!titulo || !endereco || !descricao || latitude === null || longitude === null) {
+      setMessage({ type: 'error', text: 'Título, Endereço, Descrição e Coordenadas são obrigatórios. Clique em "Obter Coordenadas" após digitar o endereço.' });
       return;
     }
 
@@ -28,13 +58,15 @@ const RegisterOccurrencePage: React.FC = () => {
     formData.append('titulo', titulo);
     formData.append('endereco', endereco);
     formData.append('descricao', descricao);
+    formData.append('latitude', latitude.toString()); // Envia a latitude
+    formData.append('longitude', longitude.toString()); // Envia a longitude
     
     imagens.forEach((file) => {
       formData.append('imagens', file);
     });
 
     try {
-      const response = await fetch('http://localhost:5000/register-occurrence', { // <--- MUDANÇA AQUI
+      const response = await fetch('http://localhost:5000/register-occurrence', {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -48,6 +80,8 @@ const RegisterOccurrencePage: React.FC = () => {
         setEndereco('');
         setDescricao('');
         setImagens([]);
+        setLatitude(null);
+        setLongitude(null);
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
@@ -99,6 +133,15 @@ const RegisterOccurrencePage: React.FC = () => {
               value={endereco}
               onChange={(e) => setEndereco(e.target.value)}
             />
+            {/* Botão para obter coordenadas */}
+            <button type="button" className="btn-primary" onClick={geocodeAddress} style={{ marginTop: '10px' }}>
+              Obter Coordenadas do Endereço
+            </button>
+            {latitude !== null && longitude !== null && (
+              <p style={{ marginTop: '10px', fontSize: '0.9rem', color: 'green' }}>
+                Coordenadas: Latitude {latitude.toFixed(4)}, Longitude {longitude.toFixed(4)}
+              </p>
+            )}
           </div>
           <div className="form-group file-input-group">
             <label htmlFor="imagens">Adicionar Imagens</label>

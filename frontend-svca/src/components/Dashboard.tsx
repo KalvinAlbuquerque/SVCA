@@ -80,7 +80,7 @@ const Dashboard: React.FC = () => {
         {/* Cards específicos para Moderador e Administrador */}
         {(userProfile === 'Moderador' || userProfile === 'Administrador') && (
           <div className="card" onClick={() => handleCardClick('/gerenciar-ocorrencias')}>
-            <img src="/ocorrencias_moderador.svg" alt="Gerenciar Ocorrências" className="card-icon" /> {/* Substitua com o ícone correto */}
+            <img src="/minhas_ocorrencias.svg" alt="Gerenciar Ocorrências" className="card-icon" /> {/* Substitua com o ícone correto */}
             <h3>Gerenciar Ocorrências</h3>
           </div>
         )}

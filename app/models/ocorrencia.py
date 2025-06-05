@@ -49,6 +49,7 @@ class Ocorrencia(db.Model):
     tipo_pontuacao_id = db.Column(db.Integer, db.ForeignKey('tipo_pontuacao.id')) # Adicione a classe TipoPontuacao
 
     # Relacionamentos (precisam que as classes referenciadas existam e estejam importadas)
+    coordenada = db.relationship('Coordenada', backref='ocorrencia_associada', lazy=True) 
     imagens = db.relationship('Imagem', backref='ocorrencia', lazy=True, cascade="all, delete-orphan") # Adicione a classe Imagem
     historico_notificacoes = db.relationship('Notificacao', backref='ocorrencia_historico', lazy=True, cascade="all, delete-orphan") # Adicione a classe Notificacao
     pontos_monitoramento = db.relationship('PontoMonitoramento', secondary=ocorrencia_ponto_monitoramento, back_populates='ocorrencias', lazy=True) # Adicione a classe PontoMonitoramento
