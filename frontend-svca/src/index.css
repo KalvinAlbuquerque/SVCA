@@ -445,13 +445,16 @@ a:hover {
 
 
 /* Estilos da Homepage */
+
 .homepage-container {
     display: flex;
     flex-direction: column;
     min-height: calc(100vh - 80px); /* Ajuste para o tamanho do header */
-    padding: 20px;
+    padding: 20px; /* Manter padding geral */
     position: relative;
     background-color: var(--white);
+    max-width: 1200px; /* Limitar largura máxima para alinhamento com o cabeçalho */
+    margin: 0 auto; /* Centralizar na página */
 }
 
 .homepage-content {
@@ -595,14 +598,18 @@ a:hover {
     left: 40px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Garante que os itens internos (logo, slogans) sejam centralizados horizontalmente */
     gap: 10px;
+    /* Remover 'width: 234px;' se existir aqui, para que ele se ajuste automaticamente */
+    text-align: center; /* Garante que qualquer texto quebre e se centralize se o elemento pai for mais largo */
 }
 
 .homepage-footer-logo img { /* imagem_2025-05-03_222956761 1 */
-    width: 131px; /* Figma: 131px */
+  width: 131px; /* Figma: 131px */
     height: 99px; /* Figma: 99px */
     object-fit: contain;
+    display: block; /* Assegura que a imagem se comporte como bloco para margens/alinhamento */
+    margin: 0 auto; /* Centraliza a imagem se ela for menor que o container flex */
 }
 
 .homepage-footer-logo .app-logo {
@@ -616,10 +623,20 @@ a:hover {
     font-weight: 600;
     line-height: 17px;
     color: var(--text-dark); /* Figma: #000000 */
-    text-align: center;
-    width: 234px; /* Figma: 234px */
+    /* text-align: center; <-- REMOVER, POIS JÁ ESTÁ NO PAI */
+    width: 234px; /* Manter a largura fixa do Figma */
+    /* margin: 0 auto; <-- Remover se existir */
 }
 
+.homepage-footer-logo .homepage-slogan-text { /* Assumindo que este é o <p> com a classe homepage-slogan-text */
+    font-size: 14px; /* Figma: 14px */
+    font-weight: 600;
+    line-height: 17px;
+    color: var(--text-dark); /* Figma: #000000 */
+    /* text-align: center; <-- REMOVER, POIS JÁ ESTÁ NO PAI */
+    width: 234px; /* Manter a largura fixa do Figma */
+    /* margin: 0 auto; <-- Remover se existir */
+}
 
 /* Responsividade global */
 @media (max-width: 992px) {

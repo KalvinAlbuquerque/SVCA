@@ -556,3 +556,31 @@ def get_profile_options():
     
     profiles = Perfil.query.all()
     return jsonify([{'id': p.id, 'nome': p.nome} for p in profiles]), 200
+
+# --- NOVA ROTA PARA O RANKING SEMANAL ---
+@main_bp.route('/ranking-semanal', methods=['GET', 'OPTIONS'])
+def get_ranking_semanal():
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    # Busca os usuários, ordenados pela pontuação em ordem decrescente
+    # (assumindo que 'consultar_pontuacao' pode ser chamada ou que a pontuação é uma coluna)
+    # Para ordenar diretamente no banco, precisaríamos da pontuação persistida ou de uma forma mais complexa.
+    # Por simplicidade, vamos buscar todos e ordenar em Python.
+    users = Usuario.query.all()
+
+    # Calcular a pontuação para cada usuário e armazenar temporariamente
+    users_with_scores = []
+    for user in users:
+        users_with_scores.append({
+            'id': user.id,
+            'nome': user.nome,
+            'pontos': user.consultar_pontuacao(), # Método existente no modelo Usuario
+            'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else '/avatar.svg', # Retorna o avatar
+        })
+    
+    # Ordenar os usuários pela pontuação em ordem decrescente
+    # e pegar os top 5 (ou quantos você quiser)
+    sorted_ranking = sorted(users_with_scores, key=lambda x: x['pontos'], reverse=True)[:5] # Top 5
+
+    return jsonify(sorted_ranking), 200
