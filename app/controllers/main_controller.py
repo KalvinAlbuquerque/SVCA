@@ -12,6 +12,8 @@ from ..models.tipo_pontuacao import TipoPontuacao
 from ..models.orgao_responsavel import OrgaoResponsavel
 from .. import db
 from ..decorators import login_required, roles_required
+from flask_mail import Message 
+from .. import mail
 
 main_bp = Blueprint('main', __name__)
 
@@ -375,7 +377,8 @@ def manage_occurrence(occurrence_id):
 
     elif request.method == 'PUT':
         data = request.get_json()
-        
+        old_orgao_id = occurrence.orgao_responsavel_id 
+
         try:
             if 'titulo' in data:
                 occurrence.titulo = data['titulo']
@@ -406,7 +409,41 @@ def manage_occurrence(occurrence_id):
                     occurrence.orgao_responsavel_id = None
 
             db.session.commit()
+            
+             # *** Lógica de Envio de E-mail para Órgão Responsável (MUDANÇA AQUI) ***
+            if occurrence.orgao_responsavel_id and occurrence.orgao_responsavel_id != old_orgao_id:
+                # Apenas envia e-mail se um órgão foi recém-atribuído ou mudou
+                orgao = OrgaoResponsavel.query.get(occurrence.orgao_responsavel_id)
+                if orgao and orgao.email:
+                    msg = Message(
+                        f"Nova Ocorrência Atribuída: {occurrence.titulo}",
+                        recipients=[orgao.email]
+                    )
+                    msg.body = (
+                        f"Prezado(a) {orgao.nome},\n\n"
+                        f"Uma nova ocorrência foi atribuída à sua organização:\n\n"
+                        f"Título: {occurrence.titulo}\n"
+                        f"Descrição: {occurrence.descricao}\n"
+                        f"Endereço: {occurrence.endereco}\n"
+                        f"Status: {occurrence.status_ocorrencia.nome}\n"
+                        f"Registrada por: {occurrence.usuario.nome}\n"
+                        f"Data de Registro: {occurrence.data_registro.strftime('%d/%m/%Y')}\n\n"
+                        f"Para mais detalhes, acesse o sistema.\n\n"
+                        f"Atenciosamente,\nSua equipe SVCA"
+                    )
+                    try:
+                        mail.send(msg)
+                        print(f"E-mail de notificação enviado para {orgao.email}")
+                    except Exception as mail_e:
+                        print(f"ERRO ao enviar e-mail para {orgao.email}: {mail_e}")
+                        # Não retornamos erro HTTP 500 se o e-mail falhar, apenas logamos.
+                        # A atualização da ocorrência já foi comitada.
+            
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao atualizar ocorrência: {e}")
+            return jsonify({'error': f'Ocorreu um erro ao atualizar a ocorrência: {str(e)}'}), 500
         except Exception as e:
             db.session.rollback()
             print(f"Erro ao atualizar ocorrência: {e}")
