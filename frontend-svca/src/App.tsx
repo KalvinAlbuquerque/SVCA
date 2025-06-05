@@ -11,9 +11,10 @@ import MyOccurrencesPage from './components/MyOccurrencesPage';
 import PoliciesPage from './components/PoliciesPage';
 import AboutUsPage from './components/AboutUsPage';
 import ManageAccountPage from './components/ManageAccountPage';
-import ManageOccurrencesPage from './components/ManageOccurrencesPage'; // Novo componente
-import ManageUsersPage from './components/ManagerUsersPage'; // Novo componente
-import ManageOrganizationsPage from './components/ManageOrganizationsPage'; // Novo componente
+import ManageOccurrencesPage from './components/ManageOccurrencesPage';
+import ManageUsersPage from './components/ManagerUsersPage';
+import ManageOrganizationsPage from './components/ManageOrganizationsPage'; // Componente de listagem
+import OrganizationFormPage from './components/OrganizationFormPage'; // Novo componente de formulário
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -85,20 +86,19 @@ const App: React.FC = () => {
           element={isAuthenticated ? <ManageAccountPage /> : <Navigate to="/login" replace />}
         />
 
-        {/* Novas Rotas Protegidas por Perfil */}
-        {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
-          <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
-        ) : null}
-
-        {/* Ajuste aqui se Moderador também puder gerenciar órgãos */}
-        {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
-             <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
-        ) : null}
-
-        {userProfile === 'Administrador' ? (
+        {/* Rotas para Moderador e Administrador */}
+        {(userProfile === 'Moderador' || userProfile === 'Administrador') ? (
           <>
-            <Route path="/gerenciar-usuarios" element={<ManageUsersPage />} />
+            <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
+            <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} /> {/* Tela de listagem */}
+            <Route path="/gerenciar-orgaos/cadastrar" element={<OrganizationFormPage />} /> {/* Tela de cadastro */}
+            <Route path="/gerenciar-orgaos/editar/:id" element={<OrganizationFormPage />} /> {/* Tela de edição */}
           </>
+        ) : null}
+
+        {/* Rotas apenas para Administrador */}
+        {userProfile === 'Administrador' ? (
+          <Route path="/gerenciar-usuarios" element={<ManageUsersPage />} />
         ) : null}
 
 
@@ -108,6 +108,12 @@ const App: React.FC = () => {
         )}
         {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
              <Route path="/gerenciar-orgaos" element={<Navigate to="/dashboard" replace />} />
+        )}
+         {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
+             <Route path="/gerenciar-orgaos/cadastrar" element={<Navigate to="/dashboard" replace />} />
+        )}
+         {isAuthenticated && (userProfile !== 'Administrador' && userProfile !== 'Moderador') && (
+             <Route path="/gerenciar-orgaos/editar/:id" element={<Navigate to="/dashboard" replace />} />
         )}
         {isAuthenticated && userProfile !== 'Administrador' && (
              <Route path="/gerenciar-usuarios" element={<Navigate to="/dashboard" replace />} />

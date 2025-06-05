@@ -1,5 +1,5 @@
 // frontend-svca/src/components/ManageOrganizationsPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Adicionado useCallback
 import { useNavigate } from 'react-router-dom';
 
 interface Organization {
@@ -13,19 +13,18 @@ const ManageOrganizationsPage: React.FC = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [newOrgForm, setNewOrgForm] = useState({ nome: '', email: '', telefone: '' });
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null); // Para rastrear o órgão selecionado
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const navigate = useNavigate();
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = useCallback(async (term: string = '') => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/orgaos-responsaveis', {
+      const response = await fetch(`http://localhost:5000/orgaos-responsaveis${term ? `?search=${encodeURIComponent(term)}` : ''}`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -47,119 +46,86 @@ const ManageOrganizationsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]); // Adiciona navigate como dependência
 
+  // Efeito para aplicar o debounce ao searchTerm
   useEffect(() => {
-    fetchOrganizations();
-  }, [navigate]);
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Atraso de 500ms
 
-  const openModal = (org: Organization) => {
-    setSelectedOrganization(org);
-    setIsModalOpen(true);
+    // Limpa o timeout anterior se o searchTerm mudar antes do tempo
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Efeito para buscar organizações quando o debouncedSearchTerm muda
+  useEffect(() => {
+    fetchOrganizations(debouncedSearchTerm);
+  }, [fetchOrganizations, debouncedSearchTerm]); // Agora depende de debouncedSearchTerm
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Ao clicar no botão, a busca é imediata, sem debounce
+    fetchOrganizations(searchTerm);
+    setDebouncedSearchTerm(searchTerm); // Garante que o debounced state esteja alinhado
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedOrganization(null);
-    setMessage(null);
+  const handleAddOrg = () => {
+    navigate('/gerenciar-orgaos/cadastrar'); // Navega para a tela de cadastro
   };
 
-  const openCreateModal = () => {
-    setNewOrgForm({ nome: '', email: '', telefone: '' });
-    setIsCreateModalOpen(true);
+  const handleEditOrg = () => {
+    if (selectedOrgId) {
+      navigate(`/gerenciar-orgaos/editar/${selectedOrgId}`); // Navega para a tela de edição
+    } else {
+      setMessage({type: 'error', text: 'Selecione um órgão para editar.'});
+      setTimeout(() => setMessage(null), 3000);
+    }
   };
 
-  const closeCreateModal = () => {
-    setIsCreateModalOpen(false);
-    setMessage(null);
-  };
+  const handleDeleteOrganization = async () => {
+    if (!selectedOrgId) {
+      setMessage({type: 'error', text: 'Selecione um órgão para remover.'});
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
 
-  const handleOrgFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewOrgForm({ ...newOrgForm, [e.target.name]: e.target.value });
-  };
-
-  const handleCreateOrganization = async () => {
-    setMessage(null);
-    if (!newOrgForm.nome || !newOrgForm.email || !newOrgForm.telefone) {
-        setMessage({ type: 'error', text: 'Todos os campos são obrigatórios para criar um órgão.' });
+    // Encontra o nome do órgão selecionado para a confirmação
+    const orgToDelete = organizations.find(org => org.id === selectedOrgId);
+    if (!orgToDelete) {
+        setMessage({type: 'error', text: 'Órgão não encontrado na lista para remoção.'});
+        setTimeout(() => setMessage(null), 3000);
         return;
     }
 
-    try {
-      const response = await fetch('http://localhost:5000/orgao-responsavel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newOrgForm),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: data.message || 'Órgão responsável criado com sucesso!' });
-        fetchOrganizations();
-        setTimeout(() => closeCreateModal(), 1500);
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Erro ao criar órgão responsável.' });
-      }
-    } catch (err: any) {
-      console.error("Erro ao criar órgão responsável:", err);
-      setMessage({ type: 'error', text: 'Erro ao conectar ao servidor. Tente novamente mais tarde.' });
+    if (!window.confirm(`Tem certeza que deseja remover o órgão "${orgToDelete.nome}"? Esta ação é irreversível!`)) {
+      return;
     }
-  };
 
-  const handleUpdateOrganization = async () => {
-    if (!selectedOrganization) return;
-    setMessage(null);
-
-    try {
-      const response = await fetch(`http://localhost:5000/orgao-responsavel/${selectedOrganization.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(selectedOrganization),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setMessage({ type: 'success', text: data.message || 'Órgão responsável atualizado com sucesso!' });
-        fetchOrganizations();
-        setTimeout(() => closeModal(), 1500);
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Erro ao atualizar órgão responsável.' });
-      }
-    } catch (err: any) {
-      console.error("Erro ao atualizar órgão responsável:", err);
-      setMessage({ type: 'error', text: 'Erro ao conectar ao servidor. Tente novamente mais tarde.' });
-    }
-  };
-
-  const handleDeleteOrganization = async (orgId: number) => {
-    if (!window.confirm(`Tem certeza que deseja deletar este órgão responsável?`)) {
-        return;
-    }
     setMessage(null);
     try {
-      const response = await fetch(`http://localhost:5000/orgao-responsavel/${orgId}`, {
+      const response = await fetch(`http://localhost:5000/orgao-responsavel/${selectedOrgId}`, {
         method: 'DELETE',
         credentials: 'include',
       });
 
       const data = await response.json();
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message || 'Órgão responsável deletado com sucesso!' });
-        fetchOrganizations();
+        setMessage({ type: 'success', text: data.message || 'Órgão responsável removido com sucesso!' });
+        fetchOrganizations(debouncedSearchTerm); // Atualiza a lista após a exclusão
+        setSelectedOrgId(null); // Limpa a seleção
+        setTimeout(() => setMessage(null), 3000);
       } else {
-        setMessage({ type: 'error', text: data.error || 'Erro ao deletar órgão responsável.' });
+        setMessage({ type: 'error', text: data.error || 'Erro ao remover órgão responsável.' });
       }
     } catch (err: any) {
-      console.error("Erro ao deletar órgão responsável:", err);
+      console.error("Erro ao remover órgão responsável:", err);
       setMessage({ type: 'error', text: 'Erro ao conectar ao servidor. Tente novamente mais tarde.' });
     }
   };
+
 
   if (loading) {
     return (
@@ -180,86 +146,58 @@ const ManageOrganizationsPage: React.FC = () => {
   return (
     <main className="manage-page-container">
       <div className="manage-box">
-        <h1 className="manage-title">Gerenciar Órgãos Responsáveis</h1>
+        <h1 className="manage-title">Pesquisar Órgão</h1> {/* Título conforme a imagem */}
 
-        <button className="btn-primary add-new-button" onClick={openCreateModal}>+ Adicionar Novo Órgão</button>
-
-        {organizations.length === 0 && (
-          <p className="no-items-message">Nenhum órgão responsável encontrado.</p>
-        )}
-
-        {organizations.length > 0 && (
-          <div className="items-list">
-            {organizations.map((org) => (
-              <div key={org.id} className="item-card">
-                <h2 className="item-card-title">{org.nome}</h2>
-                <p>Email: {org.email}</p>
-                <p>Telefone: {org.telefone}</p>
-                <div className="item-actions">
-                  <button className="btn-edit" onClick={() => openModal(org)}>Editar</button>
-                  <button className="btn-delete" onClick={() => handleDeleteOrganization(org.id)}>Excluir</button>
-                </div>
-              </div>
-            ))}
+        {message && ( // Exibe mensagens (sucesso/erro)
+          <div className={`message ${message.type}`}>
+            {message.text}
           </div>
         )}
 
-        {isModalOpen && selectedOrganization && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2>Editar Órgão Responsável</h2>
-              {message && (
-                <div className={`message ${message.type}`}>
-                  {message.text}
-                </div>
-              )}
-              <div className="form-group">
-                <label htmlFor="edit-org-nome">Nome:</label>
-                <input type="text" id="edit-org-nome" value={selectedOrganization.nome} onChange={(e) => setSelectedOrganization({ ...selectedOrganization, nome: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-org-email">Email:</label>
-                <input type="email" id="edit-org-email" value={selectedOrganization.email} onChange={(e) => setSelectedOrganization({ ...selectedOrganization, email: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-org-telefone">Telefone:</label>
-                <input type="tel" id="edit-org-telefone" value={selectedOrganization.telefone} onChange={(e) => setSelectedOrganization({ ...selectedOrganization, telefone: e.target.value })} />
-              </div>
-              <div className="modal-actions">
-                <button className="btn-primary" onClick={handleUpdateOrganization}>Salvar Alterações</button>
-                <button className="btn-secondary-modal" onClick={closeModal}>Cancelar</button>
-              </div>
+        {/* Formulário de Pesquisa e Botões de Ação */}
+        <form className="search-and-action-form" onSubmit={handleSearch}>
+            <div className="form-group search-group">
+                <input
+                    type="text"
+                    id="search-org"
+                    placeholder="Pesquisar órgão..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button type="submit" className="btn-primary search-button">Pesquisar</button>
             </div>
-          </div>
-        )}
-
-        {isCreateModalOpen && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2>Adicionar Novo Órgão Responsável</h2>
-              {message && (
-                <div className={`message ${message.type}`}>
-                  {message.text}
-                </div>
-              )}
-              <div className="form-group">
-                <label htmlFor="new-org-nome">Nome:</label>
-                <input type="text" id="new-org-nome" name="nome" value={newOrgForm.nome} onChange={handleOrgFormChange} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-org-email">Email:</label>
-                <input type="email" id="new-org-email" name="email" value={newOrgForm.email} onChange={handleOrgFormChange} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="new-org-telefone">Telefone:</label>
-                <input type="tel" id="new-org-telefone" name="telefone" value={newOrgForm.telefone} onChange={handleOrgFormChange} />
-              </div>
-              <div className="modal-actions">
-                <button className="btn-primary" onClick={handleCreateOrganization}>Criar Órgão</button>
-                <button className="btn-secondary-modal" onClick={closeCreateModal}>Cancelar</button>
-              </div>
+            <div className="action-buttons-group">
+                <button type="button" className="btn-primary" onClick={handleAddOrg}>+ Adicionar órgão</button>
+                <button type="button" className="btn-edit" onClick={handleEditOrg}>Editar órgão</button>
+                <button type="button" className="btn-delete" onClick={handleDeleteOrganization}>Remover órgão</button>
             </div>
+        </form>
+        {/* Fim do Formulário de Pesquisa e Botões de Ação */}
+
+        {/* Exibição da Lista de Órgãos */}
+        {organizations.length === 0 ? (
+          <div className="empty-state">
+            <h1>Órgãos responsáveis cadastrados</h1> {/* Título centralizado quando vazio */}
+            <p>Nenhum órgão responsável encontrado.</p>
           </div>
+        ) : (
+            <div className="organizations-list-container">
+                <h1 className="list-title">Órgãos responsáveis cadastrados</h1> {/* Título acima da lista */}
+                <div className="items-list">
+                    {organizations.map((org) => (
+                    <div
+                        key={org.id}
+                        className={`item-card ${selectedOrgId === org.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedOrgId(org.id === selectedOrgId ? null : org.id)} // Alterna a seleção
+                    >
+                        <h2 className="item-card-title">{org.nome}</h2>
+                        <p>Email: {org.email}</p>
+                        <p>Telefone: {org.telefone}</p>
+                        {/* Removidos os botões de ação individuais para usar os botões da barra superior */}
+                    </div>
+                    ))}
+                </div>
+            </div>
         )}
       </div>
     </main>
