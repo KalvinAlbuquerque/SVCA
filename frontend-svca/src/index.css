@@ -891,3 +891,133 @@ a:hover {
         font-size: 1.2rem;
     }
 }
+
+/* PARA A PÁGINA DE MINHAS OCORRÊNCIAS */
+/* src/index.css - Adicione estes estilos no final */
+
+.my-occurrences-container {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    flex-grow: 1;
+    background-color: var(--white);
+}
+
+.my-occurrences-box {
+    max-width: 900px; /* Largura da área de conteúdo */
+    width: 95%;
+    padding: 40px;
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    text-align: center;
+}
+
+.my-occurrences-title {
+    font-size: 2.5rem;
+    color: var(--text-dark);
+    margin-bottom: 30px;
+    font-weight: 700;
+    text-align: left; /* Alinhar o título à esquerda */
+}
+
+.loading-message,
+.error-message,
+.no-occurrences-message {
+    font-size: 1.1rem;
+    color: var(--text-medium);
+    margin-top: 20px;
+    text-align: center;
+}
+
+.error-message {
+    color: #cc0000; /* Vermelho para erros */
+}
+
+.occurrences-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Espaço entre os cartões de ocorrência */
+    margin-top: 20px;
+}
+
+.occurrence-card {
+    background-color: #f7f9fc; /* Fundo ligeiramente diferente para o cartão */
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 25px;
+    text-align: left;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.occurrence-card-title {
+    font-size: 1.8rem;
+    color: var(--primary-blue);
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.occurrence-card-status {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+.occurrence-card-status span {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.occurrence-card-address,
+.occurrence-card-date {
+    font-size: 0.95rem;
+    color: var(--text-medium);
+    margin-bottom: 5px;
+}
+
+.occurrence-card-description {
+    font-size: 1rem;
+    color: var(--text-dark);
+    margin-top: 15px;
+    line-height: 1.5;
+}
+
+.occurrence-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.occurrence-image-thumbnail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+
+/* Responsividade para a tela de Minhas Ocorrências */
+@media (max-width: 768px) {
+    .my-occurrences-box {
+        padding: 30px 20px;
+    }
+    .my-occurrences-title {
+        font-size: 2rem;
+    }
+    .occurrence-card-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .my-occurrences-box {
+        padding: 20px 15px;
+    }
+    .my-occurrences-title {
+        font-size: 1.8rem;
+    }
+    .occurrence-image-thumbnail {
+        width: 80px;
+        height: 80px;
+    }
+}

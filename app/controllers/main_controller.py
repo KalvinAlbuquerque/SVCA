@@ -1,17 +1,18 @@
-import os # Para lidar com caminhos de arquivo
-import uuid # Para gerar nomes de arquivo únicos
-from datetime import datetime # Para data_registro
-from flask import Blueprint, request, jsonify, session, url_for # Adicionado url_for para URLs de imagem
+# SVCA/app/controllers/main_controller.py
+import os
+import uuid
+from datetime import datetime
+from flask import Blueprint, request, jsonify, session, url_for
 from ..models.usuario import Usuario
-from ..models.ocorrencia import Ocorrencia, StatusOcorrencia # Importe Ocorrencia e StatusOcorrencia
-from ..models.coordenada import Coordenada # Importe Coordenada se for criar/associar
-from ..models.imagem import Imagem # Importe Imagem para lidar com upload
-from ..models.perfil import Perfil # Importe Perfil
+from ..models.ocorrencia import Ocorrencia, StatusOcorrencia
+from ..models.coordenada import Coordenada
+from ..models.imagem import Imagem
+from ..models.perfil import Perfil
 from .. import db
 
 main_bp = Blueprint('main', __name__)
 
-# --- Funções de login e registro ---
+# --- Funções de login, registro, dashboard, logout e register-occurrence (mantidas como estão) ---
 @main_bp.route('/')
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -19,13 +20,9 @@ def login():
         data = request.get_json()
         email = data.get('email')
         password = data.get('password')
-
         if not email or not password:
             return jsonify({'error': 'Por favor, preencha todos os campos.'}), 400
-
         user = Usuario.query.filter_by(email=email).first()
-        print(user)
-
         if user and user.autenticar(password):
             session['user_id'] = user.id
             session['user_name'] = user.nome
@@ -43,8 +40,7 @@ def login():
 @main_bp.route('/register', methods=['POST', 'OPTIONS'])
 def register():
     if request.method == 'OPTIONS':
-        return '', 200 # CORS preflight
-
+        return '', 200
     data = request.get_json()
     nome = data.get('nome')
     sobrenome = data.get('sobrenome')
@@ -99,7 +95,6 @@ def logout():
     session.pop('user_profile', None)
     return jsonify({'message': 'Você foi desconectado.'}), 200
 
-# --- Rota para Registrar Ocorrência ---
 @main_bp.route('/register-occurrence', methods=['POST', 'OPTIONS'])
 def register_occurrence():
     if request.method == 'OPTIONS':
@@ -113,15 +108,10 @@ def register_occurrence():
     if not current_user:
         return jsonify({'error': 'Usuário não encontrado.'}), 404
 
-    # Para lidar com upload de arquivos (imagens) e dados de formulário ao mesmo tempo,
-    # o frontend enviará 'multipart/form-data'. Usamos request.form para texto
-    # e request.files para arquivos.
-    
     titulo = request.form.get('titulo')
     endereco = request.form.get('endereco')
     descricao = request.form.get('descricao')
     
-    # Validação básica
     if not titulo or not endereco or not descricao:
         return jsonify({'error': 'Título, Endereço e Descrição são obrigatórios.'}), 400
 
@@ -139,16 +129,13 @@ def register_occurrence():
             usuario_id=current_user.id
         )
         db.session.add(nova_ocorrencia)
-        db.session.flush() # Para que nova_ocorrencia.id esteja disponível antes do commit
+        db.session.flush()
 
         uploaded_images = []
         if 'imagens' in request.files:
             files = request.files.getlist('imagens') 
-            
-            # Diretório para salvar imagens (deve existir e ser acessível)
-            # Ex: SVCA/app/static/uploads/ocorrencias/
             UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'ocorrencias')
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Cria o diretório se não existir
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
             for file in files:
                 if file and file.filename:
@@ -169,3 +156,40 @@ def register_occurrence():
         db.session.rollback()
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
+
+# --- Nova rota para buscar ocorrências do usuário ---
+@main_bp.route('/my-occurrences', methods=['GET', 'OPTIONS'])
+def get_my_occurrences():
+    if request.method == 'OPTIONS':
+        return '', 200 # CORS preflight
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Você precisa estar logado para ver suas ocorrências.'}), 401
+
+    current_user = Usuario.query.get(user_id)
+    if not current_user:
+        return jsonify({'error': 'Usuário não encontrado.'}), 404
+
+    # Busca todas as ocorrências associadas a este usuário
+    # .all() executa a query e retorna uma lista
+    occurrences = current_user.ocorrencias
+
+    # Formata as ocorrências para JSON
+    occurrences_data = []
+    for occ in occurrences:
+        # Pega as URLs das imagens associadas
+        images_urls = [img.url for img in occ.imagens]
+
+        occurrences_data.append({
+            'id': occ.id,
+            'titulo': occ.titulo,
+            'descricao': occ.descricao,
+            'endereco': occ.endereco,
+            'data_registro': occ.data_registro.strftime('%Y-%m-%d'), # Formata a data
+            'status': occ.status_ocorrencia.nome if occ.status_ocorrencia else 'N/A',
+            'imagens': images_urls,
+            # Você pode adicionar mais campos conforme necessário, como coordenada
+        })
+
+    return jsonify(occurrences_data), 200
