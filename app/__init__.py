@@ -1,3 +1,4 @@
+# SVCA/app/__init__.py
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -13,12 +14,7 @@ def create_app():
 
     app.config['SECRET_KEY'] = 'uma_chave_secreta_bem_longa_e_aleatoria_para_sua_sessao'
 
-    # --- MUDANÇA CRÍTICA AQUI: Defina as origens permitidas explicitamente ---
     CORS(app, supports_credentials=True, origins=['http://localhost:5173']) 
-    # Se você tiver outras origens (por exemplo, localhost:3000), adicione-as à lista
-    # Ex: origins=['http://localhost:5173', 'http://localhost:3000']
-    # Para o caso de produção, você pode usar um curinga ou a URL do seu domínio, mas com cautela.
-    # No desenvolvimento, especificar ajuda a depurar.
 
     db.init_app(app)
 
@@ -37,6 +33,9 @@ def create_app():
     from .models.coordenada import Coordenada
     from .models.tipo_pontuacao import TipoPontuacao
     from .models.ponto_monitoramento import PontoMonitoramento
+
+    # Importe o módulo de decoradores
+    from . import decorators # Adicione esta linha
 
     from .controllers.main_controller import main_bp
     app.register_blueprint(main_bp)

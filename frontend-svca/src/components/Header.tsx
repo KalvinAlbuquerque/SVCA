@@ -1,26 +1,55 @@
 // frontend-svca/src/components/Header.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
+  userProfile?: string | null; // Adiciona a propriedade userProfile
   onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ isAuthenticated = false, userProfile = null, onLogout }) => {
+  const [showMenu, setShowMenu] = useState(false); // Estado para controlar a visibilidade do dropdown
+
+  const handleMenuClick = () => {
+    setShowMenu(!showMenu);
+  };
+
+  const handleMenuItemClick = () => {
+    setShowMenu(false); // Fecha o menu ao clicar em um item
+  };
+
   return (
     <header className="main-header">
       <nav className="main-nav">
         <ul className="nav-list">
           <li className="nav-item"><Link to="/">Início</Link></li>
           <li className="nav-item"><Link to="#">Contato</Link></li>
-          <li className="nav-item"><Link to="/sobre-nos">Sobre Nós</Link></li> {/* Novo link */}
-          {isAuthenticated ? (
-            <li className="nav-item"><Link to="/dashboard">Meu menu</Link></li>
-          ) : (
-            null
+          <li className="nav-item"><Link to="/sobre-nos">Sobre Nós</Link></li>
+          
+          {isAuthenticated && (
+            <li className="nav-item menu-dropdown">
+              <span onClick={handleMenuClick} className="menu-dropdown-toggle">
+                Meu menu
+              </span>
+              {showMenu && (
+                <ul className="dropdown-menu">
+                  <li><Link to="/dashboard" onClick={handleMenuItemClick}>Dashboard</Link></li>
+                  {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
+                    <li><Link to="/gerenciar-ocorrencias" onClick={handleMenuItemClick}>Gerenciar Ocorrências</Link></li>
+                  ) : null}
+                  {userProfile === 'Administrador' ? (
+                    <>
+                      <li><Link to="/gerenciar-usuarios" onClick={handleMenuItemClick}>Gerenciar Usuários</Link></li>
+                      <li><Link to="/gerenciar-orgaos" onClick={handleMenuItemClick}>Gerenciar Órgãos</Link></li>
+                    </>
+                  ) : null}
+                  <li><Link to="/gerenciar-conta" onClick={handleMenuItemClick}>Gerenciar Conta</Link></li>
+                </ul>
+              )}
+            </li>
           )}
-           <li className="nav-item"><Link to="/politicas">Políticas de Uso</Link></li> {/* Novo link */}
+           <li className="nav-item"><Link to="/politicas">Políticas de Uso</Link></li>
         </ul>
         
         <div className="header-logo-container">

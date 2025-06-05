@@ -10,22 +10,31 @@ import RegisterOccurrencePage from './components/RegisterOccurrencePage';
 import MyOccurrencesPage from './components/MyOccurrencesPage';
 import PoliciesPage from './components/PoliciesPage';
 import AboutUsPage from './components/AboutUsPage';
-import ManageAccountPage from './components/ManageAccountPage'; // Importe o novo componente
+import ManageAccountPage from './components/ManageAccountPage';
+import ManageOccurrencesPage from './components/ManageOccurrencesPage'; // Novo componente
+import ManageUsersPage from './components/ManagerUsersPage'; // Novo componente
+import ManageOrganizationsPage from './components/ManageOrganizationsPage'; // Novo componente
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userProfile, setUserProfile] = useState<string | null>(null); // Novo estado para o perfil do usuário
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
+    const storedUserProfile = localStorage.getItem('userProfile'); // Obtém o perfil do localStorage
+
     if (userId) {
       setIsAuthenticated(true);
+      setUserProfile(storedUserProfile); // Define o perfil
     } else {
       setIsAuthenticated(false);
+      setUserProfile(null);
     }
   }, []);
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    setUserProfile(localStorage.getItem('userProfile')); // Atualiza o perfil após o login
   };
 
   const handleLogout = async () => {
@@ -37,7 +46,9 @@ const App: React.FC = () => {
       if (response.ok) {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
+        localStorage.removeItem('userProfile'); // Remove o perfil no logout
         setIsAuthenticated(false);
+        setUserProfile(null); // Limpa o perfil
       } else {
         console.error('Erro ao fazer logout no servidor.');
       }
@@ -48,7 +59,7 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
+      <Header isAuthenticated={isAuthenticated} userProfile={userProfile} onLogout={handleLogout} /> {/* Passa userProfile para o Header */}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginBox onLoginSuccess={handleLoginSuccess} />} />
@@ -70,10 +81,33 @@ const App: React.FC = () => {
           element={isAuthenticated ? <MyOccurrencesPage /> : <Navigate to="/login" replace />}
         />
         <Route
-          path="/gerenciar-conta" // Nova rota para Gerenciar Conta
+          path="/gerenciar-conta"
           element={isAuthenticated ? <ManageAccountPage /> : <Navigate to="/login" replace />}
         />
-        {/* Adicione outras rotas protegidas aqui */}
+
+        {/* Novas Rotas Protegidas por Perfil */}
+        {userProfile === 'Administrador' || userProfile === 'Moderador' ? (
+          <Route path="/gerenciar-ocorrencias" element={<ManageOccurrencesPage />} />
+        ) : null}
+
+        {userProfile === 'Administrador' ? (
+          <>
+            <Route path="/gerenciar-usuarios" element={<ManageUsersPage />} />
+            <Route path="/gerenciar-orgaos" element={<ManageOrganizationsPage />} />
+          </>
+        ) : null}
+
+        {/* Redirecionar para o dashboard caso tente acessar rotas restritas sem permissão */}
+        {isAuthenticated && userProfile === 'Usuario' && (
+             <Route path="/gerenciar-ocorrencias" element={<Navigate to="/dashboard" replace />} />
+        )}
+        {isAuthenticated && userProfile !== 'Administrador' && (
+             <Route path="/gerenciar-usuarios" element={<Navigate to="/dashboard" replace />} />
+        )}
+        {isAuthenticated && userProfile !== 'Administrador' && (
+             <Route path="/gerenciar-orgaos" element={<Navigate to="/dashboard" replace />} />
+        )}
+
       </Routes>
     </Router>
   );

@@ -21,7 +21,7 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/login', { // <--- MUDANÇA AQUI
+      const response = await fetch('http://localhost:5000/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +36,8 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
         setMessage({ type: 'success', text: data.message || 'Login realizado com sucesso!' });
         localStorage.setItem('userName', data.user_name || 'Usuário');
         localStorage.setItem('userId', data.user_id);
-        
+        localStorage.setItem('userProfile', data.user_profile); // <-- Adicione esta linha
+
         onLoginSuccess();
         navigate('/dashboard');
 
