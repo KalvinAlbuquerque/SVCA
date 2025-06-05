@@ -773,3 +773,121 @@ a:hover {
         padding: 20px 15px;
     }
 }
+
+/* PAGA PÁGINA DE REGISTRAR OCORRÊNCIA */
+.register-occurrence-box {
+    max-width: 600px; /* Adapta a largura para este formulário */
+    width: 95%;
+    padding: 40px;
+    box-shadow: 0 4px 10px var(--shadow-general);
+    border-radius: 8px;
+    background-color: var(--white);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 40px auto;
+}
+
+.register-occurrence-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    width: 100%;
+}
+
+.register-occurrence-form .form-group label {
+    font-family: var(--font-primary);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 24px;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+.register-occurrence-form .form-group input[type="text"],
+.register-occurrence-form .form-group textarea {
+    background: var(--white);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-input);
+    border-radius: 11px;
+    width: 100%;
+    padding: 12px 15px; /* Ajusta padding para campos de texto/textarea */
+    font-size: 1rem;
+    color: var(--text-dark);
+    font-family: var(--font-primary);
+    min-height: 47px; /* Garante altura mínima como os outros inputs */
+}
+
+/* Estilo para o input de arquivo personalizado */
+.file-input-group label {
+    display: block; /* Garante que o label esteja em sua própria linha */
+}
+
+.custom-file-input {
+    background: var(--white);
+    border: 1px dashed var(--border-light); /* Borda tracejada como no Figma */
+    border-radius: 11px;
+    height: 47px; /* Altura igual aos outros inputs */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-medium);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.custom-file-input:hover {
+    border-color: var(--primary-blue);
+}
+
+.selected-images-preview {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.image-tag {
+    background-color: var(--light-grey-bg);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Limita a largura da tag */
+}
+
+/* Botão de registro de ocorrência */
+.register-occurrence-form .btn-primary {
+    background: var(--primary-blue); /* Ajustado para o azul primário */
+    border-radius: 17px; /* Igual aos outros botões grandes */
+    width: 300px; /* Adapta a largura */
+    height: 50px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 29px;
+    align-self: center;
+    margin-top: 20px;
+}
+
+/* Responsividade para a página de registro de ocorrência */
+@media (max-width: 768px) {
+    .register-occurrence-box {
+        padding: 30px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .register-occurrence-box {
+        padding: 20px 15px;
+    }
+    .register-occurrence-form .btn-primary {
+        width: 90%;
+        font-size: 1.2rem;
+    }
+}

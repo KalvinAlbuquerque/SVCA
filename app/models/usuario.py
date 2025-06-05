@@ -12,7 +12,7 @@ class Usuario(db.Model):
     nome = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     telefone = db.Column(db.String(255))
-    senha = db.Column(db.String(255), nullable=False) 
+    senha = db.Column(db.String(255), nullable=False) # <--- MUDANÇA AQUI (tamanho do campo)
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=False)
 
     #Relationship
@@ -35,7 +35,45 @@ class Usuario(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    # --- MÉTODO CRIAR ATUALIZADO (para hashear a senha antes de salvar) ---
+    @classmethod
+    def criar(cls, nome, email, telefone, senha_plana, perfil_id): # <--- MUDANÇA AQUI (senha_plana)
+        """
+        Cria um novo usuário e o salva no banco de dados, hasheando a senha.
+        """
+        # Hasheia a senha antes de criar o usuário
+        senha_hash = generate_password_hash(senha_plana) # <--- MUDANÇA AQUI
+
+        novo_usuario = cls(
+            nome=nome,
+            email=email,
+            telefone=telefone,
+            senha=senha_hash, # <-- Salva a senha hashada aqui
+            perfil_id=perfil_id
+        )
+        db.session.add(novo_usuario)
+        db.session.commit()
+        return novo_usuario
+
+    @classmethod
+    def buscar_por_id(cls, usuario_id):
+        """
+        Retorna o usuário com o ID fornecido, ou None se não encontrado.
+        """
+        return cls.query.get(usuario_id)
+
+    @classmethod
+    def buscar_todos(cls):
+        """
+        Retorna todos os usuários cadastrados.
+        """
+        return cls.query.all()
+    
+    def deletar(self):
+        """
+        Remove o usuário do banco de dados.
+        """
+        db.session.delete(self)
+        db.session.commit()
 
     def registrar_ocorrencia(self, titulo, descricao, endereco, coordenada=None, tipo_pontuacao=None):
         """
@@ -81,44 +119,3 @@ class Usuario(db.Model):
 
     def __repr__(self):
         return f"<Usuario {self.nome} ({self.email})>"
-    
-    @classmethod
-    def criar(cls, nome, email, telefone, senha_plana, perfil_id):
-        """
-        Cria um novo usuário e o salva no banco de dados.
-        """
-        
-        # Hasheia a senha antes de criar o usuário
-        senha_hash = generate_password_hash(senha_plana)
-        novo_usuario = cls(
-            nome=nome,
-            email=email,
-            telefone=telefone,
-            senha=senha_hash,
-            perfil_id=perfil_id
-        )
-        db.session.add(novo_usuario)
-        db.session.commit()
-        return novo_usuario
-
-    @classmethod
-    def buscar_por_id(cls, usuario_id):
-        """
-        Retorna o usuário com o ID fornecido, ou None se não encontrado.
-        """
-        return cls.query.get(usuario_id)
-
-    @classmethod
-    def buscar_todos(cls):
-        """
-        Retorna todos os usuários cadastrados.
-        """
-        return cls.query.all()
-    
-    def deletar(self):
-        """
-        Remove o usuário do banco de dados.
-        """
-        db.session.delete(self)
-        db.session.commit()
-

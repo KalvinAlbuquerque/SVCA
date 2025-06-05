@@ -1,9 +1,8 @@
-// frontend-svca/src/components/LoginBox.tsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Importe Link
+import { useNavigate, Link } from 'react-router-dom';
 
 interface LoginBoxProps {
-  onLoginSuccess: () => void; // Função para chamar ao ter sucesso no login
+  onLoginSuccess: () => void;
 }
 
 const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
@@ -22,12 +21,13 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/login', {
+      const response = await fetch('http://localhost:5000/login', { // <--- MUDANÇA AQUI
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -37,7 +37,7 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
         localStorage.setItem('userName', data.user_name || 'Usuário');
         localStorage.setItem('userId', data.user_id);
         
-        onLoginSuccess(); // Notifica o App.tsx que o login foi bem-sucedido
+        onLoginSuccess();
         navigate('/dashboard');
 
       } else {
@@ -92,7 +92,6 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
           <a href="#" className="forgot-password">Esqueceu sua senha?</a>
           <button type="submit" className="btn-primary">Entrar</button>
         </form>
-        {/* Adiciona um link para a página de registro */}
         <p className="register-prompt">
           Ainda não tem conta? <Link to="/register">Cadastre-se</Link>
         </p>

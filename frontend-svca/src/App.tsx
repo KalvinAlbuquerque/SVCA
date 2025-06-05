@@ -1,18 +1,16 @@
-// frontend-svca/src/App.tsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import LoginBox from './components/LoginBox';
 import Dashboard from './components/Dashboard';
-import RegisterPage from './components/RegisterPage'; // Importe o novo componente RegisterPage
-import HomePage from './components/HomePage'; // Importe o novo componente HomePage
+import RegisterPage from './components/RegisterPage';
+import HomePage from './components/HomePage';
+import RegisterOccurrencePage from './components/RegisterOccurrencePage';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
-    // Verifica se o usuário está logado ao carregar o aplicativo
-    // Você pode verificar a presença de um token JWT ou user_id no localStorage/sessionStorage
     const userId = localStorage.getItem('userId');
     if (userId) {
       setIsAuthenticated(true);
@@ -21,35 +19,45 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Função para mudar o estado de autenticação (passada para LoginBox)
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
 
-  // Função para logout (passada para Header ou outro componente de logout)
-  const handleLogout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userName');
-    // Se tiver token, remova também: localStorage.removeItem('token');
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/logout', { // <--- MUDANÇA AQUI
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        setIsAuthenticated(false);
+      } else {
+        console.error('Erro ao fazer logout no servidor.');
+      }
+    } catch (error) {
+      console.error('Erro de rede ao fazer logout:', error);
+    }
   };
 
   return (
     <Router>
-      {/* Passa o estado de autenticação para o Header */}
-      <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} /> {/* onLogout será usado depois */}
+      <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
       <Routes>
-        <Route path="/" element={<HomePage />} /> {/* Rota para a Homepage */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginBox onLoginSuccess={handleLoginSuccess} />} />
-        <Route path="/register" element={<RegisterPage />} /> {/* Rota para a página de registro */}
+        <Route path="/register" element={<RegisterPage />} />
         
         {/* Rotas protegidas (apenas para usuários autenticados) */}
         <Route
           path="/dashboard"
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
+          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" replace />}
         />
-        {/* Adicione outras rotas protegidas aqui */}
-        {/* <Route path="/mapa" element={isAuthenticated ? <MapPage /> : <Navigate to="/login" />} /> */}
+        <Route
+          path="/registrar-ocorrencia"
+          element={isAuthenticated ? <RegisterOccurrencePage /> : <Navigate to="/login" replace />}
+        />
       </Routes>
     </Router>
   );
