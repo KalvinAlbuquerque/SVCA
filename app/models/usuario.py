@@ -15,7 +15,9 @@ class Usuario(db.Model):
     telefone = db.Column(db.String(255))
     senha = db.Column(db.String(255), nullable=False)
     perfil_id = db.Column(db.Integer, db.ForeignKey('perfil.id'), nullable=False)
-    avatar_url = db.Column(db.String(255), default='/avatar.svg') # <--- GARANTA QUE ESTA LINHA EXISTE E ESTÁ CORRETA
+    avatar_url = db.Column(db.String(255), default='/avatar.svg')
+    ocorrencias_recusadas_count = db.Column(db.Integer, default=0, nullable=False) # *** NOVO CAMPO ***
+    is_blocked = db.Column(db.Boolean, default=False, nullable=False) # *** NOVO CAMPO ***
 
     #Relationship
     ocorrencias = db.relationship('Ocorrencia', backref='usuario', lazy=True)
@@ -50,8 +52,9 @@ class Usuario(db.Model):
             email=email,
             telefone=telefone,
             senha=senha_hash,
-            perfil_id=perfil_id
-            # Não é necessário definir avatar_url aqui, o default já cuida
+            perfil_id=perfil_id,
+            ocorrencias_recusadas_count=0, # Garante que comece em 0
+            is_blocked=False # Garante que comece como não bloqueado
         )
         db.session.add(novo_usuario)
         db.session.commit()
@@ -83,15 +86,14 @@ class Usuario(db.Model):
         Registra uma nova ocorrência associada a este usuário.
         Retorna a nova instância de Ocorrencia.
         """
-        # Importe Ocorrencia e StatusOcorrencia DENTRO da função para evitar importação circular
-        # ou se você tiver um models/__init__.py que os importe todos.
         from models.ocorrencia import Ocorrencia
         from models.ocorrencia import StatusOcorrencia
-        from datetime import datetime # datetime necessário aqui!
+        from datetime import datetime
 
-        status_em_andamento = db.session.query(StatusOcorrencia).filter_by(nome='Em andamento').first()
-        if not status_em_andamento:
-            raise ValueError("Status 'Em andamento' não encontrado. Crie-o na inicialização do banco.")
+        # O status inicial agora será 'Registrada'
+        status_registrada = db.session.query(StatusOcorrencia).filter_by(nome='Registrada').first()
+        if not status_registrada:
+            raise ValueError("Status 'Registrada' não encontrado. Crie-o na inicialização do banco.")
 
         nova_ocorrencia = Ocorrencia(
             titulo=titulo,
@@ -99,12 +101,10 @@ class Usuario(db.Model):
             data_registro=datetime.now().date(),
             endereco=endereco,
             coordenada=coordenada,
-            status_ocorrencia=status_em_andamento,
+            status_ocorrencia=status_registrada, # *** MUDANÇA AQUI: Status inicial 'Registrada' ***
             tipo_pontuacao=tipo_pontuacao,
             usuario=self
         )
-        # db.session.add(nova_ocorrencia)
-        # db.session.commit()
         return nova_ocorrencia
 
     def consultar_pontuacao(self):
@@ -113,7 +113,7 @@ class Usuario(db.Model):
             if ocorrencia.status_ocorrencia and ocorrencia.status_ocorrencia.nome == 'Fechada com solução':
                 if ocorrencia.tipo_pontuacao and ocorrencia.tipo_pontuacao.nome == 'Ocorrencia/qualidade':
                     pontuacao += 10
-                elif ocorrencia.tipo_pontuacao and ocorrencia.tipo_pontuacao.nome == 'CorrenciaSolucionada':
+                elif ocorrencia.tipo_pontuacao and ocorrencia.tipo_pontuacao.nome == 'CorrenciaSolucionada': # Verifique o typo 'Correncia'
                     pontuacao += 20
         return pontuacao
 

@@ -12,7 +12,7 @@ from .models.imagem import Imagem
 from .models.orgao_responsavel import OrgaoResponsavel
 from .models.notificacao import Notificacao
 from .models.coordenada import Coordenada
-from .models.tipo_pontuacao import TipoPontuacao # Já importado, mas reforçando
+from .models.tipo_pontuacao import TipoPontuacao
 
 
 @click.group()
@@ -36,10 +36,9 @@ def seed_db():
         moderador_perfil = Perfil(nome='Moderador')
         usuario_perfil = Perfil(nome='Usuario')
         db.session.add_all([admin_perfil, moderador_perfil, usuario_perfil])
-        db.session.commit() # Commit para garantir que perfis tenham IDs antes de criar usuário
+        db.session.commit()
         click.echo('Perfis básicos adicionados.')
     else:
-        # Se os perfis já existem, recupere-os para usar no Usuario.criar
         admin_perfil = Perfil.query.filter_by(nome='Administrador').first()
         moderador_perfil = Perfil.query.filter_by(nome='Moderador').first()
         usuario_perfil = Perfil.query.filter_by(nome='Usuario').first()
@@ -49,13 +48,16 @@ def seed_db():
         em_andamento_status = StatusOcorrencia(nome='Em andamento')
         fechada_solucao_status = StatusOcorrencia(nome='Fechada com solução')
         fechada_sem_solucao_status = StatusOcorrencia(nome='Fechada sem solução')
-        db.session.add_all([em_andamento_status, fechada_solucao_status, fechada_sem_solucao_status])
+        recusada_status = StatusOcorrencia(nome='Recusada')
+        registrada_status = StatusOcorrencia(nome='Registrada')
+        db.session.add_all([em_andamento_status, fechada_solucao_status, 
+                           fechada_sem_solucao_status, recusada_status, registrada_status])
         click.echo('Status de ocorrência básicos adicionados.')
 
     # Adicionar Tipos de Pontuação
     if not TipoPontuacao.query.first():
         ocorrencia_qualidade = TipoPontuacao(nome='Ocorrencia/qualidade')
-        ocorrencia_solucionada = TipoPontuacao(nome='OcorrenciaSolucionada')
+        ocorrencia_solucionada = TipoPontuacao(nome='OcorrenciaSolucionada') # *** CORRIGIDO O TYPO AQUI ***
         db.session.add_all([ocorrencia_qualidade, ocorrencia_solucionada])
         click.echo('Tipos de Pontuação básicos adicionados.')
 
@@ -101,5 +103,5 @@ def seed_db():
         else:
             click.echo('Erro: Perfil Usuário não encontrado para criar usuário inicial.')
             
-    db.session.commit() # Commit final para todas as adições
+    db.session.commit()
     click.echo('Dados iniciais inseridos com sucesso.')

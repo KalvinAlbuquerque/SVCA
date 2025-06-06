@@ -31,10 +31,15 @@ def login():
         if not email or not password:
             return jsonify({'error': 'Por favor, preencha todos os campos.'}), 400
         user = Usuario.query.filter_by(email=email).first()
+        
+        # *** MUDANÇA AQUI: Verificação de bloqueio no login ***
+        if user and user.is_blocked:
+            return jsonify({'error': 'Sua conta foi bloqueada devido a violação das políticas de uso. Por favor, entre em contato para mais informações.'}), 403 # 403 Forbidden
+        
         if user and user.autenticar(password):
             session['user_id'] = user.id
             session['user_name'] = user.nome
-            session['user_profile'] = user.perfil.nome # Armazena o nome do perfil na sessão
+            session['user_profile'] = user.perfil.nome
             return jsonify({
                 'message': f'Bem-vindo, {user.nome}!',
                 'user_id': user.id,
@@ -124,18 +129,19 @@ def register_occurrence():
         db.session.add(new_coordenada)
         db.session.flush()
 
-        status_em_andamento = StatusOcorrencia.query.filter_by(nome='Em andamento').first()
-        if not status_em_andamento:
-            return jsonify({'error': "Status 'Em andamento' não encontrado. Contate o administrador."}), 500
+        # *** MUDANÇA AQUI: Status inicial 'Registrada' ***
+        status_registrada = StatusOcorrencia.query.filter_by(nome='Registrada').first()
+        if not status_registrada:
+            return jsonify({'error': "Status 'Registrada' não encontrado. Contate o administrador."}), 500
 
         nova_ocorrencia = Ocorrencia(
             titulo=titulo,
             descricao=descricao,
             data_registro=datetime.now().date(),
             endereco=endereco,
-            status_id=status_em_andamento.id,
+            status_id=status_registrada.id, # Usar 'Registrada'
             usuario_id=current_user.id,
-            coordenada_id=new_coordenada.id # Associe a coordenada à ocorrência
+            coordenada_id=new_coordenada.id
         )
         db.session.add(nova_ocorrencia)
         db.session.flush()
@@ -159,13 +165,13 @@ def register_occurrence():
                     uploaded_images.append(image_url)
 
         db.session.commit()
-        return jsonify({'message': 'Ocorrência registrada com sucesso!', 'ocorrencia_id': nova_ocorrencia.id, 'imagens_urls': uploaded_images}), 201
+        return jsonify({'message': 'Ocorrência registrada com sucesso! Aguardando validação do moderador.'}), 201
 
     except Exception as e:
         db.session.rollback()
         print(f"Erro ao registrar ocorrência: {e}")
         return jsonify({'error': f'Ocorreu um erro ao registrar a ocorrência: {str(e)}'}), 500
-
+    
 @main_bp.route('/my-occurrences', methods=['GET'])
 @login_required
 def get_my_occurrences():
@@ -385,11 +391,13 @@ def manage_occurrence(occurrence_id):
             'imagens': images_urls,
             'latitude': latitude,
             'longitude': longitude,
+            'justificativa_recusa': occurrence.justificativa_recusa,
         }), 200
 
     elif request.method == 'PUT':
         data = request.get_json()
-        old_orgao_id = occurrence.orgao_responsavel_id 
+        old_status_id = occurrence.status_id # Guarda o status antigo
+        old_orgao_id = occurrence.orgao_responsavel_id # Guarda o órgão antigo
 
         try:
             if 'titulo' in data:
@@ -399,18 +407,90 @@ def manage_occurrence(occurrence_id):
             if 'endereco' in data:
                 occurrence.endereco = data['endereco']
             
+            # *** Lógica de Status e Justificativa (MUDANÇA AQUI) ***
             if 'status_id' in data:
                 new_status_id = int(data['status_id'])
-                if new_status_id != occurrence.status_id:
+                if new_status_id != old_status_id: # Se o status mudou
                     occurrence.status_id = new_status_id
                     new_status = StatusOcorrencia.query.get(new_status_id)
+                    user_who_registered = Usuario.query.get(occurrence.usuario_id) # O usuário que registrou a ocorrência
+
+                    # Lógica para Status 'Fechada com solução'
                     if new_status and new_status.nome == 'Fechada com solução':
                         occurrence.data_finalizacao = datetime.now().date()
                         tipo_pontuacao_solucionada = TipoPontuacao.query.filter_by(nome='OcorrenciaSolucionada').first()
                         if tipo_pontuacao_solucionada:
                             occurrence.tipo_pontuacao_id = tipo_pontuacao_solucionada.id
-                    elif new_status and new_status.nome != 'Fechada com solução':
+                        # Se estava recusada antes e agora foi solucionada, talvez diminuir o contador?
+                        # Se o status anterior era 'Recusada', e agora foi solucionada, podemos decrementar a contagem.
+                        # Isso evita que o usuário permaneça penalizado se a ocorrência foi validada posteriormente.
+                        recusada_status_obj = StatusOcorrencia.query.filter_by(nome='Recusada').first()
+                        if old_status_id == recusada_status_obj.id and user_who_registered and user_who_registered.ocorrencias_recusadas_count > 0:
+                            user_who_registered.ocorrencias_recusadas_count -= 1
+                            if user_who_registered.ocorrencias_recusadas_count < 3 and user_who_registered.is_blocked:
+                                user_who_registered.is_blocked = False # Desbloqueia se a contagem cair abaixo de 3
+                                print(f"Usuário {user_who_registered.email} desbloqueado devido a ocorrência {occurrence.id} ser solucionada.")
+
+                        # Limpa justificativa se não for mais recusada
+                        occurrence.justificativa_recusa = None 
+
+                    # Lógica para Status 'Recusada'
+                    elif new_status and new_status.nome == 'Recusada':
+                        justificativa = data.get('justificativa_recusa') # Pega a justificativa do frontend
+                        if not justificativa:
+                            return jsonify({'error': 'Justificativa é obrigatória para recusar a ocorrência.'}), 400
+                        
+                        occurrence.justificativa_recusa = justificativa
+                        occurrence.data_finalizacao = datetime.now().date() # Recusada implica finalização
+
+                        # Incrementar contador de ocorrências recusadas do usuário
+                        if user_who_registered:
+                            user_who_registered.ocorrencias_recusadas_count += 1
+                            db.session.add(user_who_registered) # Adiciona para garantir que a mudança seja comitada
+
+                            # Verificar se o usuário deve ser bloqueado
+                            if user_who_registered.ocorrencias_recusadas_count >= 3:
+                                user_who_registered.is_blocked = True
+                                print(f"Usuário {user_who_registered.email} bloqueado por ter {user_who_registered.ocorrencias_recusadas_count} ocorrências recusadas.")
+
+                            # Enviar e-mail para o usuário que registrou a ocorrência sobre a recusa/bloqueio
+                            msg_body = (
+                                f"Prezado(a) {user_who_registered.nome},\n\n"
+                                f"Sua ocorrência '{occurrence.titulo}' foi recusada.\n\n"
+                                f"Justificativa: {justificativa}\n\n"
+                                f"Status atual: {new_status.nome}\n\n"
+                            )
+                            if user_who_registered.is_blocked:
+                                msg_body += (
+                                    f"ATENÇÃO: Sua conta foi bloqueada automaticamente devido a múltiplas ocorrências recusadas.\n"
+                                    f"Você acumulou {user_who_registered.ocorrencias_recusadas_count} ocorrências recusadas.\n"
+                                    f"Para mais informações sobre as políticas de uso, visite o sistema.\n\n"
+                                )
+                            msg_body += f"Atenciosamente,\nSua equipe SVCA"
+
+                            msg = Message(
+                                f"Sua Ocorrência '{occurrence.titulo}' Foi Recusada",
+                                recipients=[user_who_registered.email],
+                                body=msg_body
+                            )
+                            try:
+                                mail.send(msg)
+                                print(f"E-mail de recusa/bloqueio enviado para {user_who_registered.email}")
+                            except Exception as mail_e:
+                                print(f"ERRO ao enviar e-mail de recusa/bloqueio: {mail_e}")
+
+                    # Lógica para Status 'Em andamento' (vindo de 'Registrada')
+                    elif new_status and new_status.nome == 'Em andamento':
+                        # Se uma ocorrência 'Registrada' vira 'Em andamento', ela é validada.
+                        # Se antes estava 'Recusada' e agora vira 'Em andamento' (revisão), limpamos justificativa.
                         occurrence.data_finalizacao = None
+                        occurrence.justificativa_recusa = None
+
+                    # Limpar justificativa e data_finalizacao para outros status que não sejam 'Recusada' ou 'Fechada com solução'
+                    else:
+                        occurrence.data_finalizacao = None
+                        occurrence.justificativa_recusa = None
+                        # Remove a pontuação se o status não for mais de solução
                         occurrence.tipo_pontuacao_id = None
 
             if 'orgao_responsavel_id' in data:
@@ -419,9 +499,9 @@ def manage_occurrence(occurrence_id):
                     occurrence.orgao_responsavel_id = int(orgao_id_val)
                 else:
                     occurrence.orgao_responsavel_id = None
-
-            db.session.commit()
             
+            db.session.commit() # Comita todas as mudanças (ocorrência e usuário)
+
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
@@ -435,34 +515,9 @@ def manage_occurrence(occurrence_id):
             return jsonify({'message': 'Ocorrência deletada com sucesso!'}), 200
         except Exception as e:
             db.session.rollback()
+            print(f"Erro ao deletar ocorrência: {e}")
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
-@main_bp.route('/users', methods=['GET'])
-@roles_required(['Administrador'])
-def get_all_users():
-    search_term = request.args.get('search', '').strip()
-    users_query = Usuario.query
-
-    if search_term:
-        users_query = users_query.filter(db.or_(
-            Usuario.nome.ilike(f'%{search_term}%'),
-            Usuario.email.ilike(f'%{search_term}%')
-        ))
-
-    users = users_query.all()
-    users_data = []
-    for user in users:
-        # CORREÇÃO: Removido 'images_urls = [img.url for img in occ.imagens]' pois 'occ' não existe aqui.
-        # Usuários não têm 'imagens' no modelo que você forneceu.
-        users_data.append({
-            'id': user.id,
-            'nome': user.nome,
-            'email': user.email,
-            'telefone': user.telefone,
-            'perfil': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.consultar_pontuacao()
-        })
-    return jsonify(users_data), 200
 
 @main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador'])

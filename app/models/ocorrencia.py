@@ -47,6 +47,9 @@ class Ocorrencia(db.Model):
     orgao_responsavel_id = db.Column(db.Integer, db.ForeignKey('orgao_responsavel.id')) # Adicione a classe OrgaoResponsavel
     coordenada_id = db.Column(db.Integer, db.ForeignKey('coordenada.id')) # Adicione a classe Coordenada
     tipo_pontuacao_id = db.Column(db.Integer, db.ForeignKey('tipo_pontuacao.id')) # Adicione a classe TipoPontuacao
+    
+    justificativa_recusa = db.Column(db.Text) # *** NOVO CAMPO ***
+
 
     # Relacionamentos (precisam que as classes referenciadas existam e estejam importadas)
     coordenada = db.relationship('Coordenada', backref='ocorrencia_associada', lazy=True) 
