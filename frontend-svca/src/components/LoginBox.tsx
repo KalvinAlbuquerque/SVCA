@@ -90,7 +90,7 @@ const LoginBox: React.FC<LoginBoxProps> = ({ onLoginSuccess }) => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <a href="#" className="forgot-password">Esqueceu sua senha?</a>
+          <Link to="/forgot-password" className="forgot-password">Esqueceu sua senha?</Link>
           <button type="submit" className="btn-primary">Entrar</button>
         </form>
         <p className="register-prompt">

@@ -17,10 +17,11 @@ import ManageOrganizationsPage from './components/ManageOrganizationsPage';
 import OrganizationFormPage from './components/OrganizationFormPage';
 import ContactPage from './components/ContactPage';
 import ViewOccurrencePage from './components/ViewOccurrencePage';
-import ProfilePage from './components/ProfilePage'; // Importe a ProfilePage
+import ProfilePage from './components/ProfilePage'; 
 import RankingSemanal from './components/RankingSemanal';
-import MapPage from './components/MapPage'; // *** NOVO IMPORT ***
-
+import MapPage from './components/MapPage'; 
+import ForgotPasswordPage from './components/ForgotPasswordPage'; 
+import ResetPasswordPage from './components/ResetPasswordPage'; 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userProfile, setUserProfile] = useState<string | null>(null);
@@ -148,6 +149,8 @@ const App: React.FC = () => {
         )}
 
         <Route path="/ranking-semanal" element={<RankingSemanal />} /> {/* <--- NOVA ROTA */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       </Routes>
     </Router>

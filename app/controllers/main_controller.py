@@ -2,12 +2,12 @@
 import os
 import uuid
 from datetime import datetime
-from flask import Blueprint, request, jsonify, session, url_for
+from flask import Blueprint, current_app, request, jsonify, session, url_for
 
 from app.models.notificacao import Notificacao
 from ..models.usuario import Usuario
 from ..models.ocorrencia import Ocorrencia, StatusOcorrencia
-from ..models.coordenada import Coordenada # Adicione Coordenada
+from ..models.coordenada import Coordenada
 from ..models.imagem import Imagem
 from ..models.perfil import Perfil
 from ..models.tipo_pontuacao import TipoPontuacao
@@ -16,6 +16,7 @@ from .. import db
 from ..decorators import login_required, roles_required
 from flask_mail import Message 
 from .. import mail
+from itsdangerous import BadTimeSignature, SignatureExpired, URLSafeTimedSerializer 
 
 main_bp = Blueprint('main', __name__)
 
@@ -112,7 +113,6 @@ def register_occurrence():
     titulo = request.form.get('titulo')
     endereco = request.form.get('endereco')
     descricao = request.form.get('descricao')
-    # NOVOS CAMPOS: Latitude e Longitude (da implementação anterior)
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
     
@@ -120,7 +120,6 @@ def register_occurrence():
         return jsonify({'error': 'Título, Endereço, Descrição, Latitude e Longitude são obrigatórios.'}), 400
 
     try:
-        # Crie a coordenada (da implementação anterior)
         new_coordenada = Coordenada(latitude=float(latitude), longitude=float(longitude))
         db.session.add(new_coordenada)
         db.session.flush()
@@ -290,7 +289,6 @@ def view_occurrence_public(occurrence_id):
         latitude = occurrence.coordenada.latitude
         longitude = occurrence.coordenada.longitude
 
-    # Obter histórico de notificações
     historico_notificacoes = []
     for notificacao in occurrence.historico_notificacoes:
         historico_notificacoes.append({
@@ -424,40 +422,7 @@ def manage_occurrence(occurrence_id):
 
             db.session.commit()
             
-             # *** Lógica de Envio de E-mail para Órgão Responsável (MUDANÇA AQUI) ***
-            """ if occurrence.orgao_responsavel_id and occurrence.orgao_responsavel_id != old_orgao_id:
-                # Apenas envia e-mail se um órgão foi recém-atribuído ou mudou
-                orgao = OrgaoResponsavel.query.get(occurrence.orgao_responsavel_id)
-                if orgao and orgao.email:
-                    msg = Message(
-                        f"Nova Ocorrência Atribuída: {occurrence.titulo}",
-                        recipients=[orgao.email]
-                    )
-                    msg.body = (
-                        f"Prezado(a) {orgao.nome},\n\n"
-                        f"Uma nova ocorrência foi atribuída à sua organização:\n\n"
-                        f"Título: {occurrence.titulo}\n"
-                        f"Descrição: {occurrence.descricao}\n"
-                        f"Endereço: {occurrence.endereco}\n"
-                        f"Status: {occurrence.status_ocorrencia.nome}\n"
-                        f"Registrada por: {occurrence.usuario.nome}\n"
-                        f"Data de Registro: {occurrence.data_registro.strftime('%d/%m/%Y')}\n\n"
-                        f"Para mais detalhes, acesse o sistema.\n\n"
-                        f"Atenciosamente,\nSua equipe SVCA"
-                    )
-                    try:
-                        mail.send(msg)
-                        print(f"E-mail de notificação enviado para {orgao.email}")
-                    except Exception as mail_e:
-                        print(f"ERRO ao enviar e-mail para {orgao.email}: {mail_e}")
-                        # Não retornamos erro HTTP 500 se o e-mail falhar, apenas logamos.
-                        # A atualização da ocorrência já foi comitada. """
-            
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
-        except Exception as e:
-            db.session.rollback()
-            print(f"Erro ao atualizar ocorrência: {e}")
-            return jsonify({'error': f'Ocorreu um erro ao atualizar a ocorrência: {str(e)}'}), 500
         except Exception as e:
             db.session.rollback()
             print(f"Erro ao atualizar ocorrência: {e}")
@@ -487,6 +452,8 @@ def get_all_users():
     users = users_query.all()
     users_data = []
     for user in users:
+        # CORREÇÃO: Removido 'images_urls = [img.url for img in occ.imagens]' pois 'occ' não existe aqui.
+        # Usuários não têm 'imagens' no modelo que você forneceu.
         users_data.append({
             'id': user.id,
             'nome': user.nome,
@@ -717,7 +684,6 @@ def send_notification_to_orgao(occurrence_id):
         return jsonify({'error': 'Órgão Responsável não encontrado ou sem e-mail para notificação.'}), 400
 
     try:
-        # 1. Enviar E-mail
         msg_body = (
             f"Prezado(a) {orgao.nome},\n\n"
             f"Uma ocorrência foi encaminhada/atualizada para a sua organização:\n\n"
@@ -737,19 +703,102 @@ def send_notification_to_orgao(occurrence_id):
         )
         mail.send(msg)
 
-        # 2. Registrar no Histórico de Notificações
         new_notification = Notificacao(
             mensagem="Notificação enviada ao Órgão Responsável.",
-            data_envio=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), # Formato para string
+            data_envio=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             email_destino=orgao.email,
             ocorrencia_id=occurrence.id
         )
         db.session.add(new_notification)
-        db.session.commit() # Comita o registro da notificação
+        db.session.commit()
 
         return jsonify({'message': 'Notificação enviada com sucesso e registrada no histórico!'}), 200
 
     except Exception as e:
-        db.session.rollback() # Em caso de erro, desfaz apenas o registro da notificação (se houver)
+        db.session.rollback()
         print(f"ERRO ao enviar notificação para {orgao.email} ou registrar histórico: {e}")
         return jsonify({'error': f'Erro ao enviar notificação ou registrar histórico: {str(e)}'}), 500
+
+# --- NOVA ROTA: Esqueci a Senha ---
+@main_bp.route('/forgot-password', methods=['POST'])
+def forgot_password_request():
+    email = request.json.get('email')
+    if not email:
+        return jsonify({'error': 'E-mail é obrigatório.'}), 400
+
+    user = Usuario.query.filter_by(email=email).first()
+
+    # Sempre retorne uma mensagem genérica por segurança,
+    # para não revelar se o e-mail existe ou não.
+    if not user:
+        return jsonify({'message': 'Se você tem uma conta, um link para redefinir sua senha foi enviado para seu e-mail.'}), 200
+
+    try:
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        token = s.dumps({'user_id': user.id}, salt='password-reset-salt') 
+
+        reset_url = f"http://localhost:5173/reset-password/{token}"
+
+        msg = Message(
+            "Redefinição de Senha para SVCA",
+            recipients=[user.email],
+            body=f"Olá {user.nome},\n\n"
+                 f"Você solicitou uma redefinição de senha para sua conta SVCA.\n"
+                 f"Clique no link a seguir para redefinir sua senha: {reset_url}\n\n"
+                 f"Este link é válido por 1 hora. Se você não solicitou isso, por favor, ignore este e-mail.\n\n"
+                 f"Atenciosamente,\nSua equipe SVCA"
+        )
+        mail.send(msg)
+
+        return jsonify({'message': 'Um link para redefinir sua senha foi enviado para seu e-mail.'}), 200
+
+    except Exception as e:
+        print(f"ERRO ao enviar e-mail de redefinição de senha para {email}: {e}")
+        # Em caso de erro, ainda retornamos uma mensagem genérica por segurança
+        return jsonify({'error': 'Ocorreu um erro ao enviar o e-mail de redefinição de senha.'}), 500
+    
+    
+@main_bp.route('/reset-password/<token>', methods=['POST'])
+def reset_password(token):
+    # Use a SECRET_KEY do aplicativo para assinar o token
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+
+    try:
+        # Tenta carregar o token. max_age = 3600 (1 hora)
+        # Se o token for inválido ou expirado, SignatureExpired ou BadTimeSignature será levantado
+        user_data = s.loads(token, salt='password-reset-salt', max_age=3600)
+        user_id = user_data.get('user_id')
+    except SignatureExpired:
+        return jsonify({'error': 'O link de redefinição de senha expirou. Por favor, solicite um novo.'}), 400
+    except BadTimeSignature:
+        return jsonify({'error': 'O link de redefinição de senha é inválido ou foi adulterado.'}), 400
+    except Exception as e:
+        print(f"Erro ao decodificar token: {e}")
+        return jsonify({'error': 'O link de redefinição de senha é inválido.'}), 400
+
+    user = Usuario.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'Usuário não encontrado para este link de redefinição.'}), 404
+
+    data = request.json
+    new_password = data.get('new_password')
+    confirm_new_password = data.get('confirm_new_password')
+
+    if not new_password or not confirm_new_password:
+        return jsonify({'error': 'Por favor, digite e confirme sua nova senha.'}), 400
+    
+    # CORREÇÃO: Usar len() para obter o comprimento da string em Python
+    if len(new_password) < 6:
+        return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
+
+    if new_password != confirm_new_password:
+        return jsonify({'error': 'As senhas não coincidem.'}), 400
+    
+    try:
+        user.redefinir_senha(new_password) # Seu método redefinir_senha já hasheia a senha
+        db.session.commit()
+        return jsonify({'message': 'Sua senha foi redefinida com sucesso!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao redefinir senha do usuário {user_id}: {e}")
+        return jsonify({'error': 'Ocorreu um erro ao redefinir sua senha.'}), 500
