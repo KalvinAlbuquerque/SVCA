@@ -1,4 +1,3 @@
-# SVCA/app/controllers/main_controller.py
 import os
 import uuid
 from datetime import datetime
@@ -518,6 +517,41 @@ def manage_occurrence(occurrence_id):
             print(f"Erro ao deletar ocorrência: {e}")
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
+# --- NOVA ROTA: Listar e Pesquisar Usuários (para Administrador) ---
+@main_bp.route('/users', methods=['GET'])
+@roles_required(['Administrador'])
+def get_all_users():
+    search_term = request.args.get('search', '').strip()
+    users_query = Usuario.query
+
+    if search_term:
+        users_query = users_query.filter(db.or_(
+            Usuario.nome.ilike(f'%{search_term}%'),
+            Usuario.email.ilike(f'%{search_term}%'),
+            Usuario.telefone.ilike(f'%{search_term}%')
+        ))
+    
+    users = users_query.all()
+    users_data = []
+    for user in users:
+        # Divide o nome completo em nome e sobrenome, se houver
+        nome_partes = user.nome.split(' ', 1)
+        primeiro_nome = nome_partes[0] if nome_partes else ""
+        sobrenome = nome_partes[1] if len(nome_partes) > 1 else ""
+
+        users_data.append({
+            'id': user.id,
+            'nome': primeiro_nome, # Retorna o primeiro nome
+            'sobrenome': sobrenome, # Retorna o sobrenome
+            'email': user.email,
+            'telefone': user.telefone,
+            'perfil_id': user.perfil_id,
+            'perfil': user.perfil.nome if user.perfil else 'N/A',
+            'pontos': user.consultar_pontuacao(),
+            'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count,
+            'is_blocked': user.is_blocked,
+        })
+    return jsonify(users_data), 200
 
 @main_bp.route('/user/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador'])
@@ -534,14 +568,20 @@ def manage_user(user_id):
             'telefone': user.telefone,
             'perfil_id': user.perfil_id,
             'perfil_nome': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.consultar_pontuacao()
+            'pontos': user.consultar_pontuacao(),
+            'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count, # Retorna o contador
+            'is_blocked': user.is_blocked, # Retorna o status de bloqueio
         }), 200
 
     elif request.method == 'PUT':
         data = request.get_json()
         try:
-            if 'nome' in data:
+            # Reconstroi o nome completo se nome e sobrenome forem enviados
+            if 'nome' in data and 'sobrenome' in data:
+                user.nome = f"{data['nome']} {data['sobrenome']}".strip()
+            elif 'nome' in data: # Se apenas nome for enviado, assume que é o nome completo
                 user.nome = data['nome']
+
             if 'email' in data and data['email'] != user.email:
                 existing_email_user = Usuario.query.filter(Usuario.email == data['email'], Usuario.id != user.id).first()
                 if existing_email_user:
@@ -553,6 +593,13 @@ def manage_user(user_id):
                 user.perfil_id = data['perfil_id']
             if 'nova_senha' in data and data['nova_senha']:
                 user.redefinir_senha(data['nova_senha'])
+            
+            # Atualiza os campos de bloqueio e contador
+            if 'is_blocked' in data:
+                user.is_blocked = bool(data['is_blocked']) # Converte para booleano
+            if 'ocorrencias_recusadas_count' in data:
+                user.ocorrencias_recusadas_count = int(data['ocorrencias_recusadas_count'])
+
 
             db.session.commit()
             return jsonify({'message': 'Usuário atualizado com sucesso!'}), 200
