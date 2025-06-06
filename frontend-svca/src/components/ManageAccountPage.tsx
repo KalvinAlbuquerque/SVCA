@@ -9,7 +9,6 @@ interface UserProfile {
   sobrenome: string;
   email: string;
   telefone: string;
-  cpf?: string; // Opcional
   apelido: string; // Mapeado para o nome completo ou nome principal
   perfil: string;
   pontos: number; // Já existe, mas reforçando que é o campo direto do modelo
@@ -116,7 +115,6 @@ const ManageAccountPage: React.FC = () => {
         sobrenome: profile.sobrenome,
         email: profile.email,
         telefone: profile.telefone,
-        cpf: profile.cpf,
         apelido: profile.apelido, // Enviando o apelido de volta
         avatar_url: selectedAvatar, // Envia o avatar selecionado para o backend
       };
@@ -203,10 +201,6 @@ const ManageAccountPage: React.FC = () => {
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input type="email" id="email" name="email" value={profile.email} onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label htmlFor="cpf">CPF</label>
-              <input type="text" id="cpf" name="cpf" value={profile.cpf || ''} onChange={handleChange} />
             </div>
           </div>
           <div className="form-row">

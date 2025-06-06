@@ -5,10 +5,11 @@ import { useNavigate } from 'react-router-dom';
 const RegisterPage: React.FC = () => {
   const [form, setForm] = useState({
     email: '',
-    apelido: '', // Mapeará para 'nome' no backend por enquanto
-    nome: '', // Mapeará para parte do 'nome' no backend
-    sobrenome: '', // Mapeará para parte do 'nome' no backend
-    cpf: '',
+    apelido: '',
+    nome: '',
+    sobrenome: '',
+    // Remova a linha abaixo
+    // cpf: '', // LINHA A SER REMOVIDA
     telefone: '',
     senha: '',
     confirma_senha: ''
@@ -35,25 +36,24 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    // Validação de campos obrigatórios (ajuste conforme sua regra)
     if (!form.email || !form.apelido || !form.nome || !form.telefone || !form.senha || !form.confirma_senha) {
       setMessage({ type: 'error', text: 'Por favor, preencha todos os campos obrigatórios.' });
       return;
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/register', { // Rota de registro no Flask
+      const response = await fetch('http://127.0.0.1:5000/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: form.email,
-          // 'apelido' da tela mapeado para 'nome' principal do modelo de usuário
-          nome: form.nome, // Primeiro nome
+          nome: form.nome,
           sobrenome: form.sobrenome,
           telefone: form.telefone,
-          cpf: form.cpf, // Envia mesmo se estiver vazio, o backend pode ignorar
+          // Remova a linha abaixo
+          // cpf: form.cpf, // LINHA A SER REMOVIDA
           senha: form.senha,
           confirma_senha: form.confirma_senha
         }),
@@ -63,10 +63,9 @@ const RegisterPage: React.FC = () => {
 
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Registro realizado com sucesso!' });
-        // Redireciona para a tela de login após o registro bem-sucedido
         setTimeout(() => {
           navigate('/login');
-        }, 2000); // Espera 2 segundos antes de redirecionar
+        }, 2000);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao registrar usuário.' });
       }
@@ -77,8 +76,8 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <main className="login-container"> {/* Reutiliza o estilo do container de login */}
-      <div className="login-box register-box"> {/* Adiciona uma classe específica para registro */}
+    <main className="login-container">
+      <div className="login-box register-box">
         <div className="logo-area">
           <img src="/logo.png" alt="Vigilância Comunitária da Água Logo" className="app-logo" />
         </div>
@@ -92,7 +91,7 @@ const RegisterPage: React.FC = () => {
         )}
 
         <form className="register-form" onSubmit={handleSubmit}>
-          <div className="form-row"> {/* Usar para organizar campos lado a lado */}
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="email">Email</label>
               <input type="email" id="email" name="email" placeholder="Insira seu e-mail..." required value={form.email} onChange={handleChange} />
@@ -113,10 +112,13 @@ const RegisterPage: React.FC = () => {
             </div>
           </div>
           <div className="form-row">
+            {/* Remova o div completo abaixo */}
+            {/*
             <div className="form-group">
               <label htmlFor="cpf">CPF (Opcional)</label>
               <input type="text" id="cpf" name="cpf" placeholder="Insira seu CPF..." value={form.cpf} onChange={handleChange} />
             </div>
+            */}
             <div className="form-group">
               <label htmlFor="telefone">Telefone</label>
               <input type="tel" id="telefone" name="telefone" placeholder="Insira seu telefone..." required value={form.telefone} onChange={handleChange} />

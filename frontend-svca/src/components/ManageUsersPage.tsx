@@ -9,7 +9,7 @@ interface User {
   telefone: string;
   perfil: string;
   perfil_id?: number;
-  pontos: number; // Já existe, mas reforçando
+  pontos: number;
 }
 
 interface ProfileOption {
@@ -29,7 +29,7 @@ const ManageUsersPage: React.FC = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState<string>('');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(''); // Novo estado para o termo com debounce
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
 
   const navigate = useNavigate();
 
@@ -78,29 +78,25 @@ const ManageUsersPage: React.FC = () => {
     }
   };
 
-  // Efeito para aplicar o debounce ao searchTerm
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 500); // Atraso de 500ms (você pode ajustar)
+    }, 500);
 
-    // Limpa o timeout anterior se o searchTerm mudar antes do tempo
     return () => {
       clearTimeout(handler);
     };
   }, [searchTerm]);
 
-  // Efeito para buscar usuários quando o debouncedSearchTerm muda
   useEffect(() => {
     fetchUsers(debouncedSearchTerm);
     fetchProfileOptions();
-  }, [fetchUsers, debouncedSearchTerm]); // Agora depende de debouncedSearchTerm
+  }, [fetchUsers, debouncedSearchTerm]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Ao clicar no botão, a busca é imediata, sem debounce
     fetchUsers(searchTerm);
-    setDebouncedSearchTerm(searchTerm); // Garante que o debounced state esteja alinhado
+    setDebouncedSearchTerm(searchTerm);
   };
 
   const openModal = (user: User) => {
@@ -122,7 +118,6 @@ const ManageUsersPage: React.FC = () => {
     setCurrentProfileId(Number(e.target.value));
   };
 
-  // Adicionado para lidar com a mudança na pontuação no modal
   const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (selectedUser) {
         setSelectedUser({ ...selectedUser, pontos: Number(e.target.value) });
@@ -148,7 +143,7 @@ const ManageUsersPage: React.FC = () => {
         email: selectedUser.email,
         telefone: selectedUser.telefone,
         perfil_id: currentProfileId,
-        pontos: selectedUser.pontos, // Envia a pontuação atualizada
+        pontos: selectedUser.pontos,
     };
 
     if (newPassword) {
@@ -168,7 +163,7 @@ const ManageUsersPage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Usuário atualizado com sucesso!' });
-        fetchUsers(debouncedSearchTerm); // Usa o termo debounced para re-pesquisar
+        fetchUsers(debouncedSearchTerm);
         setTimeout(() => closeModal(), 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao atualizar usuário.' });
@@ -194,7 +189,7 @@ const ManageUsersPage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setMessage({ type: 'success', text: data.message || 'Usuário deletado com sucesso!' });
-        fetchUsers(debouncedSearchTerm); // Usa o termo debounced para re-pesquisar
+        fetchUsers(debouncedSearchTerm);
         setTimeout(() => closeModal(), 1500);
       } else {
         setMessage({ type: 'error', text: data.error || 'Erro ao deletar usuário.' });

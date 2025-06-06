@@ -20,7 +20,6 @@ from itsdangerous import BadTimeSignature, SignatureExpired, URLSafeTimedSeriali
 
 main_bp = Blueprint('main', __name__)
 
-# --- Funções existentes (login, register, dashboard, logout, register-occurrence, get_my_occurrences) ---
 @main_bp.route('/')
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -32,9 +31,8 @@ def login():
             return jsonify({'error': 'Por favor, preencha todos os campos.'}), 400
         user = Usuario.query.filter_by(email=email).first()
         
-        # *** MUDANÇA AQUI: Verificação de bloqueio no login ***
         if user and user.is_blocked:
-            return jsonify({'error': 'Sua conta foi bloqueada devido a violação das políticas de uso. Por favor, entre em contato para mais informações.'}), 403 # 403 Forbidden
+            return jsonify({'error': 'Sua conta foi bloqueada devido a violação das políticas de uso. Por favor, entre em contato para mais informações.'}), 403
         
         if user and user.autenticar(password):
             session['user_id'] = user.id
@@ -57,7 +55,8 @@ def register():
     sobrenome = data.get('sobrenome')
     email = data.get('email')
     telefone = data.get('telefone')
-    cpf = data.get('cpf')
+    # Remova a linha abaixo
+    # cpf = data.get('cpf') # LINHA A SER REMOVIDA
     senha = data.get('senha')
     confirma_senha = data.get('confirma_senha')
 
@@ -129,7 +128,6 @@ def register_occurrence():
         db.session.add(new_coordenada)
         db.session.flush()
 
-        # *** MUDANÇA AQUI: Status inicial 'Registrada' ***
         status_registrada = StatusOcorrencia.query.filter_by(nome='Registrada').first()
         if not status_registrada:
             return jsonify({'error': "Status 'Registrada' não encontrado. Contate o administrador."}), 500
@@ -139,7 +137,7 @@ def register_occurrence():
             descricao=descricao,
             data_registro=datetime.now().date(),
             endereco=endereco,
-            status_id=status_registrada.id, # Usar 'Registrada'
+            status_id=status_registrada.id,
             usuario_id=current_user.id,
             coordenada_id=new_coordenada.id
         )
@@ -189,7 +187,7 @@ def get_my_occurrences():
         
         latitude = None
         longitude = None
-        if occ.coordenada: # Verifica se a ocorrência tem uma coordenada associada
+        if occ.coordenada:
             latitude = occ.coordenada.latitude
             longitude = occ.coordenada.longitude
 
@@ -201,13 +199,12 @@ def get_my_occurrences():
             'data_registro': occ.data_registro.strftime('%Y-%m-%d'),
             'status': occ.status_ocorrencia.nome if occ.status_ocorrencia else 'N/A',
             'imagens': images_urls,
-            'latitude': latitude, # Adicione latitude
-            'longitude': longitude, # Adicione longitude
+            'latitude': latitude,
+            'longitude': longitude,
         })
 
     return jsonify(occurrences_data), 200
 
-# --- ROTA COMBINADA PARA USER PROFILE (GET e PUT) ---
 @main_bp.route('/user-profile', methods=['GET', 'PUT'])
 @login_required
 def user_profile():
@@ -229,10 +226,11 @@ def user_profile():
             'sobrenome': sobrenome,
             'email': user.email,
             'telefone': user.telefone,
-            'cpf': user.cpf if hasattr(user, 'cpf') else None,
+            # Remova a linha abaixo
+            # 'cpf': user.cpf if hasattr(user, 'cpf') else None, # LINHA A SER REMOVIDA
             'apelido': user.nome,
             'perfil': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.pontos, # Retorna o campo 'pontos' diretamente
+            'pontos': user.pontos,
             'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else None,
         }
         return jsonify(profile_data), 200
@@ -255,9 +253,10 @@ def user_profile():
 
             if 'telefone' in data:
                 user.telefone = data['telefone']
-            if 'cpf' in data:
-                if hasattr(user, 'cpf'):
-                    user.cpf = data['cpf']
+            # Remova a lógica do CPF abaixo
+            # if 'cpf' in data: # LINHA A SER REMOVIDA
+            #     if hasattr(user, 'cpf'): # LINHA A SER REMOVIDA
+            #         user.cpf = data['cpf'] # LINHA A SER REMOVIDA
 
             if 'nova_senha' in data and data['nova_senha']:
                 if 'repita_sua_senha' not in data or data['nova_senha'] != data['repita_sua_senha']:
@@ -278,7 +277,6 @@ def user_profile():
             print(f"Erro ao atualizar perfil: {e}")
             return jsonify({'error': f'Ocorreu um erro ao atualizar o perfil: {str(e)}'}), 500
 
-# --- ROTAS PARA USUÁRIOS COMUNS (Visualização) ---
 @main_bp.route('/view-occurrence/<int:occurrence_id>', methods=['GET'])
 @login_required
 def view_occurrence_public(occurrence_id):
@@ -299,10 +297,10 @@ def view_occurrence_public(occurrence_id):
     for notificacao in occurrence.historico_notificacoes:
         historico_notificacoes.append({
             'mensagem': notificacao.mensagem,
-            'data_envio': notificacao.data_envio, # Assumindo que data_envio já está formatada como string
+            'data_envio': notificacao.data_envio,
             'email_destino': notificacao.email_destino
         })
-    historico_notificacoes.sort(key=lambda x: x['data_envio'], reverse=True) # Ordena por data mais recente
+    historico_notificacoes.sort(key=lambda x: x['data_envio'], reverse=True)
 
     return jsonify({
         'id': occurrence.id,
@@ -321,12 +319,8 @@ def view_occurrence_public(occurrence_id):
         'imagens': images_urls,
         'latitude': latitude,
         'longitude': longitude,
-        'historico_notificacoes': historico_notificacoes, # *** NOVO CAMPO ***
+        'historico_notificacoes': historico_notificacoes,
     }), 200
-
-
-
-# --- ROTAS PARA MODERADOR E ADMINISTRADOR ---
 
 @main_bp.route('/occurrences', methods=['GET'])
 @roles_required(['Administrador', 'Moderador'])
@@ -396,8 +390,8 @@ def manage_occurrence(occurrence_id):
 
     elif request.method == 'PUT':
         data = request.get_json()
-        old_status_id = occurrence.status_id # Guarda o status antigo
-        old_orgao_id = occurrence.orgao_responsavel_id # Guarda o órgão antigo
+        old_status_id = occurrence.status_id
+        old_orgao_id = occurrence.orgao_responsavel_id
 
         try:
             if 'titulo' in data:
@@ -407,84 +401,64 @@ def manage_occurrence(occurrence_id):
             if 'endereco' in data:
                 occurrence.endereco = data['endereco']
             
-            # *** Lógica de Status e Justificativa (MUDANÇA AQUI) ***
             if 'status_id' in data:
                 new_status_id = int(data['status_id'])
-                if new_status_id != old_status_id: # Se o status mudou
+                if new_status_id != old_status_id:
                     occurrence.status_id = new_status_id
                     new_status = StatusOcorrencia.query.get(new_status_id)
-                    user_who_registered = Usuario.query.get(occurrence.usuario_id) # O usuário que registrou a ocorrência
+                    user_who_registered = Usuario.query.get(occurrence.usuario_id)
 
-                    # Reverte pontos se o status foi alterado de um estado de pontuação
-                    # E adiciona novos pontos com base no novo status
-                    # Isso evita que o usuário ganhe pontos repetidos ou perca pontos injustamente ao mudar de status
                     if user_who_registered:
-                        # Reverter pontos do status antigo da ocorrência
                         old_status = StatusOcorrencia.query.get(old_status_id)
                         if old_status:
-                            if old_status.nome == 'Em andamento': # Se era validada
-                                user_who_registered.pontos -= 25 # Reverte os pontos de validação
-                            elif old_status.nome == 'Fechada com solução': # Se era solucionada
-                                user_who_registered.pontos -= 50 # Reverte pontos de validação + solução
-                            elif old_status.nome == 'Recusada': # Se era recusada
-                                # Assumimos que o contador de recusadas e o bloqueio são tratados separadamente
-                                # e não diretamente pelos pontos aqui.
+                            if old_status.nome == 'Em andamento':
+                                user_who_registered.pontos -= 25
+                            elif old_status.nome == 'Fechada com solução':
+                                user_who_registered.pontos -= 50
+                            elif old_status.nome == 'Recusada':
                                 pass 
                         
-                        # Adicionar pontos com base no novo status
                         if new_status.nome == 'Em andamento':
-                            user_who_registered.pontos += 25 # Pontos por ocorrência validada (+25)
+                            user_who_registered.pontos += 25
                         elif new_status.nome == 'Fechada com solução':
-                            # Se for "Fechada com solução", significa que foi validada (+25) E resolvida (+25)
                             user_who_registered.pontos += 50 
                         elif new_status.nome == 'Recusada':
-                            user_who_registered.pontos -= 10 # Pontos por ocorrência recusada (-10)
+                            user_who_registered.pontos -= 10
                         
-                        # Garante que os pontos não fiquem negativos se a regra permitir
                         if user_who_registered.pontos < 0:
-                            user_who_registered.pontos = 0 # Opcional: define um limite mínimo de 0 pontos
-                        db.session.add(user_who_registered) # Salva as alterações de pontos no usuário
+                            user_who_registered.pontos = 0
+                        db.session.add(user_who_registered)
 
-
-                    # Lógica para Status 'Fechada com solução'
                     if new_status and new_status.nome == 'Fechada com solução':
                         occurrence.data_finalizacao = datetime.now().date()
                         tipo_pontuacao_solucionada = TipoPontuacao.query.filter_by(nome='OcorrenciaSolucionada').first()
                         if tipo_pontuacao_solucionada:
                             occurrence.tipo_pontuacao_id = tipo_pontuacao_solucionada.id
-                        # Se estava recusada antes e agora foi solucionada, talvez diminuir o contador?
-                        # Se o status anterior era 'Recusada', e agora foi solucionada, podemos decrementar a contagem.
-                        # Isso evita que o usuário permaneça penalizado se a ocorrência foi validada posteriormente.
                         recusada_status_obj = StatusOcorrencia.query.filter_by(nome='Recusada').first()
                         if old_status_id == recusada_status_obj.id and user_who_registered and user_who_registered.ocorrencias_recusadas_count > 0:
                             user_who_registered.ocorrencias_recusadas_count -= 1
                             if user_who_registered.ocorrencias_recusadas_count < 3 and user_who_registered.is_blocked:
-                                user_who_registered.is_blocked = False # Desbloqueia se a contagem cair abaixo de 3
+                                user_who_registered.is_blocked = False
                                 print(f"Usuário {user_who_registered.email} desbloqueado devido a ocorrência {occurrence.id} ser solucionada.")
 
-                        # Limpa justificativa se não for mais recusada
                         occurrence.justificativa_recusa = None 
 
-                    # Lógica para Status 'Recusada'
                     elif new_status and new_status.nome == 'Recusada':
-                        justificativa = data.get('justificativa_recusa') # Pega a justificativa do frontend
+                        justificativa = data.get('justificativa_recusa')
                         if not justificativa:
                             return jsonify({'error': 'Justificativa é obrigatória para recusar a ocorrência.'}), 400
                         
                         occurrence.justificativa_recusa = justificativa
-                        occurrence.data_finalizacao = datetime.now().date() # Recusada implica finalização
+                        occurrence.data_finalizacao = datetime.now().date()
 
-                        # Incrementar contador de ocorrências recusadas do usuário
                         if user_who_registered:
                             user_who_registered.ocorrencias_recusadas_count += 1
-                            db.session.add(user_who_registered) # Adiciona para garantir que a mudança seja comitada
+                            db.session.add(user_who_registered)
 
-                            # Verificar se o usuário deve ser bloqueado
                             if user_who_registered.ocorrencias_recusadas_count >= 3:
                                 user_who_registered.is_blocked = True
                                 print(f"Usuário {user_who_registered.email} bloqueado por ter {user_who_registered.ocorrencias_recusadas_count} ocorrências recusadas.")
 
-                            # Enviar e-mail para o usuário que registrou a ocorrência sobre a recusa/bloqueio
                             msg_body = (
                                 f"Prezado(a) {user_who_registered.nome},\n\n"
                                 f"Sua ocorrência '{occurrence.titulo}' foi recusada.\n\n"
@@ -510,18 +484,13 @@ def manage_occurrence(occurrence_id):
                             except Exception as mail_e:
                                 print(f"ERRO ao enviar e-mail de recusa/bloqueio: {mail_e}")
 
-                    # Lógica para Status 'Em andamento' (vindo de 'Registrada')
                     elif new_status and new_status.nome == 'Em andamento':
-                        # Se uma ocorrência 'Registrada' vira 'Em andamento', ela é validada.
-                        # Se antes estava 'Recusada' e agora vira 'Em andamento' (revisão), limpamos justificativa.
                         occurrence.data_finalizacao = None
                         occurrence.justificativa_recusa = None
 
-                    # Limpar justificativa e data_finalizacao para outros status que não sejam 'Recusada' ou 'Fechada com solução'
                     else:
                         occurrence.data_finalizacao = None
                         occurrence.justificativa_recusa = None
-                        # Remove a pontuação se o status não for mais de solução
                         occurrence.tipo_pontuacao_id = None
 
             if 'orgao_responsavel_id' in data:
@@ -531,7 +500,7 @@ def manage_occurrence(occurrence_id):
                 else:
                     occurrence.orgao_responsavel_id = None
             
-            db.session.commit() # Comita todas as mudanças (ocorrência e usuário)
+            db.session.commit()
 
             return jsonify({'message': 'Ocorrência atualizada com sucesso!'}), 200
         except Exception as e:
@@ -549,7 +518,6 @@ def manage_occurrence(occurrence_id):
             print(f"Erro ao deletar ocorrência: {e}")
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
-
 @main_bp.route('/users', methods=['GET'])
 @roles_required(['Administrador'])
 def get_all_users():
@@ -566,20 +534,19 @@ def get_all_users():
     users = users_query.all()
     users_data = []
     for user in users:
-        # Divide o nome completo em nome e sobrenome, se houver
         nome_partes = user.nome.split(' ', 1)
         primeiro_nome = nome_partes[0] if nome_partes else ""
         sobrenome = nome_partes[1] if len(nome_partes) > 1 else ""
 
         users_data.append({
             'id': user.id,
-            'nome': primeiro_nome, # Retorna o primeiro nome
-            'sobrenome': sobrenome, # Retorna o sobrenome
+            'nome': primeiro_nome,
+            'sobrenome': sobrenome,
             'email': user.email,
             'telefone': user.telefone,
             'perfil_id': user.perfil_id,
             'perfil': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.pontos, # Retorna o campo 'pontos'
+            'pontos': user.pontos,
             'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count,
             'is_blocked': user.is_blocked,
         })
@@ -600,18 +567,17 @@ def manage_user(user_id):
             'telefone': user.telefone,
             'perfil_id': user.perfil_id,
             'perfil_nome': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.pontos, # Retorna o campo 'pontos'
-            'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count, # Retorna o contador
-            'is_blocked': user.is_blocked, # Retorna o status de bloqueio
+            'pontos': user.pontos,
+            'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count,
+            'is_blocked': user.is_blocked,
         }), 200
 
     elif request.method == 'PUT':
         data = request.get_json()
         try:
-            # Reconstroi o nome completo se nome e sobrenome forem enviados
             if 'nome' in data and 'sobrenome' in data:
                 user.nome = f"{data['nome']} {data['sobrenome']}".strip()
-            elif 'nome' in data: # Se apenas nome for enviado, assume que é o nome completo
+            elif 'nome' in data:
                 user.nome = data['nome']
 
             if 'email' in data and data['email'] != user.email:
@@ -626,16 +592,13 @@ def manage_user(user_id):
             if 'nova_senha' in data and data['nova_senha']:
                 user.redefinir_senha(data['nova_senha'])
             
-            # Atualiza os campos de bloqueio e contador
             if 'is_blocked' in data:
-                user.is_blocked = bool(data['is_blocked']) # Converte para booleano
+                user.is_blocked = bool(data['is_blocked'])
             if 'ocorrencias_recusadas_count' in data:
                 user.ocorrencias_recusadas_count = int(data['ocorrencias_recusadas_count'])
 
-            # Permite atualizar a pontuação diretamente via PUT no usuário
             if 'pontos' in data:
                 user.pontos = int(data['pontos'])
-
 
             db.session.commit()
             return jsonify({'message': 'Usuário atualizado com sucesso!'}), 200
@@ -765,7 +728,7 @@ def get_ranking_semanal():
         users_with_scores.append({
             'id': user.id,
             'nome': user.nome,
-            'pontos': user.pontos, # Retorna o campo 'pontos'
+            'pontos': user.pontos,
             'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else '/avatar.svg',
         })
     
@@ -857,7 +820,6 @@ def send_notification_to_orgao(occurrence_id):
         print(f"ERRO ao enviar notificação para {orgao.email} ou registrar histórico: {e}")
         return jsonify({'error': f'Erro ao enviar notificação ou registrar histórico: {str(e)}'}), 500
 
-# --- NOVA ROTA: Esqueci a Senha ---
 @main_bp.route('/forgot-password', methods=['POST'])
 def forgot_password_request():
     email = request.json.get('email')
@@ -866,8 +828,6 @@ def forgot_password_request():
 
     user = Usuario.query.filter_by(email=email).first()
 
-    # Sempre retorne uma mensagem genérica por segurança,
-    # para não revelar se o e-mail existe ou não.
     if not user:
         return jsonify({'message': 'Se você tem uma conta, um link para redefinir sua senha foi enviado para seu e-mail.'}), 200
 
@@ -892,18 +852,13 @@ def forgot_password_request():
 
     except Exception as e:
         print(f"ERRO ao enviar e-mail de redefinição de senha para {email}: {e}")
-        # Em caso de erro, ainda retornamos uma mensagem genérica por segurança
         return jsonify({'error': 'Ocorreu um erro ao enviar o e-mail de redefinição de senha.'}), 500
-    
     
 @main_bp.route('/reset-password/<token>', methods=['POST'])
 def reset_password(token):
-    # Use a SECRET_KEY do aplicativo para assinar o token
     s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
 
     try:
-        # Tenta carregar o token. max_age = 3600 (1 hora)
-        # Se o token for inválido ou expirado, SignatureExpired ou BadTimeSignature será levantado
         user_data = s.loads(token, salt='password-reset-salt', max_age=3600)
         user_id = user_data.get('user_id')
     except SignatureExpired:
@@ -925,7 +880,6 @@ def reset_password(token):
     if not new_password or not confirm_new_password:
         return jsonify({'error': 'Por favor, digite e confirme sua nova senha.'}), 400
     
-    # CORREÇÃO: Usar len() para obter o comprimento da string em Python
     if len(new_password) < 6:
         return jsonify({'error': 'A nova senha deve ter pelo menos 6 caracteres.'}), 400
 
@@ -933,7 +887,7 @@ def reset_password(token):
         return jsonify({'error': 'As senhas não coincidem.'}), 400
     
     try:
-        user.redefinir_senha(new_password) # Seu método redefinir_senha já hasheia a senha
+        user.redefinir_senha(new_password)
         db.session.commit()
         return jsonify({'message': 'Sua senha foi redefinida com sucesso!'}), 200
     except Exception as e:
