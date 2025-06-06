@@ -18,6 +18,7 @@ class Usuario(db.Model):
     avatar_url = db.Column(db.String(255), default='/avatar.svg')
     ocorrencias_recusadas_count = db.Column(db.Integer, default=0, nullable=False) # *** NOVO CAMPO ***
     is_blocked = db.Column(db.Boolean, default=False, nullable=False) # *** NOVO CAMPO ***
+    pontos = db.Column(db.Integer, default=0, nullable=False) # *** NOVO CAMPO PARA PONTUAÇÃO ***
 
     #Relationship
     ocorrencias = db.relationship('Ocorrencia', backref='usuario', lazy=True)
@@ -54,7 +55,8 @@ class Usuario(db.Model):
             senha=senha_hash,
             perfil_id=perfil_id,
             ocorrencias_recusadas_count=0, # Garante que comece em 0
-            is_blocked=False # Garante que comece como não bloqueado
+            is_blocked=False, # Garante que comece como não bloqueado
+            pontos=0 # Inicializa pontos como 0
         )
         db.session.add(novo_usuario)
         db.session.commit()
@@ -106,16 +108,12 @@ class Usuario(db.Model):
             usuario=self
         )
         return nova_ocorrencia
-
+    
+    # Este método não será mais necessário diretamente para calcular pontos totais
+    # mas pode ser útil para outras lógicas. A lógica de pontuação será no controller.
     def consultar_pontuacao(self):
-        pontuacao = 0
-        for ocorrencia in self.ocorrencias:
-            if ocorrencia.status_ocorrencia and ocorrencia.status_ocorrencia.nome == 'Fechada com solução':
-                if ocorrencia.tipo_pontuacao and ocorrencia.tipo_pontuacao.nome == 'Ocorrencia/qualidade':
-                    pontuacao += 10
-                elif ocorrencia.tipo_pontuacao and ocorrencia.tipo_pontuacao.nome == 'CorrenciaSolucionada': # Verifique o typo 'Correncia'
-                    pontuacao += 20
-        return pontuacao
+        # Esta função agora retorna o valor do campo 'pontos'
+        return self.pontos
 
     def visualizar_denuncias(self):
         return self.ocorrencias.all()

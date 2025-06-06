@@ -9,7 +9,7 @@ interface User {
   telefone: string;
   perfil: string;
   perfil_id?: number;
-  pontos: number;
+  pontos: number; // Já existe, mas reforçando
 }
 
 interface ProfileOption {
@@ -122,6 +122,13 @@ const ManageUsersPage: React.FC = () => {
     setCurrentProfileId(Number(e.target.value));
   };
 
+  // Adicionado para lidar com a mudança na pontuação no modal
+  const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedUser) {
+        setSelectedUser({ ...selectedUser, pontos: Number(e.target.value) });
+    }
+  };
+
   const handleUpdateUser = async () => {
     if (!selectedUser || currentProfileId === null) return;
 
@@ -141,6 +148,7 @@ const ManageUsersPage: React.FC = () => {
         email: selectedUser.email,
         telefone: selectedUser.telefone,
         perfil_id: currentProfileId,
+        pontos: selectedUser.pontos, // Envia a pontuação atualizada
     };
 
     if (newPassword) {
@@ -284,6 +292,10 @@ const ManageUsersPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-pontos">Pontos:</label>
+                <input type="number" id="edit-pontos" value={selectedUser.pontos} onChange={handlePointsChange} />
               </div>
               <div className="form-group">
                 <label htmlFor="new-password">Nova Senha:</label>

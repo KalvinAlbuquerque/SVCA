@@ -53,12 +53,21 @@ def seed_db():
         db.session.add_all([em_andamento_status, fechada_solucao_status, 
                            fechada_sem_solucao_status, recusada_status, registrada_status])
         click.echo('Status de ocorrência básicos adicionados.')
+        db.session.commit() # Commit para garantir que os status estejam disponíveis antes dos tipos de pontuação
 
     # Adicionar Tipos de Pontuação
     if not TipoPontuacao.query.first():
-        ocorrencia_qualidade = TipoPontuacao(nome='Ocorrencia/qualidade')
-        ocorrencia_solucionada = TipoPontuacao(nome='OcorrenciaSolucionada') # *** CORRIGIDO O TYPO AQUI ***
-        db.session.add_all([ocorrencia_qualidade, ocorrencia_solucionada])
+        # Encontre os IDs dos status correspondentes
+        em_andamento_id = StatusOcorrencia.query.filter_by(nome='Em andamento').first().id
+        fechada_solucao_id = StatusOcorrencia.query.filter_by(nome='Fechada com solução').first().id
+        recusada_id = StatusOcorrencia.query.filter_by(nome='Recusada').first().id
+
+        ocorrencia_validada = TipoPontuacao(nome='OcorrenciaValidada') # +25 pontos
+        ocorrencia_solucionada = TipoPontuacao(nome='OcorrenciaSolucionada') # +25 pontos adicionais (totalizando 50)
+        ocorrencia_falsa = TipoPontuacao(nome='OcorrenciaFalsa') # -10 pontos
+        
+        db.session.add_all([ocorrencia_validada, ocorrencia_solucionada, ocorrencia_falsa])
+        db.session.commit()
         click.echo('Tipos de Pontuação básicos adicionados.')
 
     if not Usuario.query.filter_by(email='admin@example.com').first():

@@ -1,3 +1,4 @@
+# SVCA/app/controllers/main_controller.py
 import os
 import uuid
 from datetime import datetime
@@ -231,7 +232,7 @@ def user_profile():
             'cpf': user.cpf if hasattr(user, 'cpf') else None,
             'apelido': user.nome,
             'perfil': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': pontuacao,
+            'pontos': user.pontos, # Retorna o campo 'pontos' diretamente
             'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else None,
         }
         return jsonify(profile_data), 200
@@ -414,6 +415,37 @@ def manage_occurrence(occurrence_id):
                     new_status = StatusOcorrencia.query.get(new_status_id)
                     user_who_registered = Usuario.query.get(occurrence.usuario_id) # O usuário que registrou a ocorrência
 
+                    # Reverte pontos se o status foi alterado de um estado de pontuação
+                    # E adiciona novos pontos com base no novo status
+                    # Isso evita que o usuário ganhe pontos repetidos ou perca pontos injustamente ao mudar de status
+                    if user_who_registered:
+                        # Reverter pontos do status antigo da ocorrência
+                        old_status = StatusOcorrencia.query.get(old_status_id)
+                        if old_status:
+                            if old_status.nome == 'Em andamento': # Se era validada
+                                user_who_registered.pontos -= 25 # Reverte os pontos de validação
+                            elif old_status.nome == 'Fechada com solução': # Se era solucionada
+                                user_who_registered.pontos -= 50 # Reverte pontos de validação + solução
+                            elif old_status.nome == 'Recusada': # Se era recusada
+                                # Assumimos que o contador de recusadas e o bloqueio são tratados separadamente
+                                # e não diretamente pelos pontos aqui.
+                                pass 
+                        
+                        # Adicionar pontos com base no novo status
+                        if new_status.nome == 'Em andamento':
+                            user_who_registered.pontos += 25 # Pontos por ocorrência validada (+25)
+                        elif new_status.nome == 'Fechada com solução':
+                            # Se for "Fechada com solução", significa que foi validada (+25) E resolvida (+25)
+                            user_who_registered.pontos += 50 
+                        elif new_status.nome == 'Recusada':
+                            user_who_registered.pontos -= 10 # Pontos por ocorrência recusada (-10)
+                        
+                        # Garante que os pontos não fiquem negativos se a regra permitir
+                        if user_who_registered.pontos < 0:
+                            user_who_registered.pontos = 0 # Opcional: define um limite mínimo de 0 pontos
+                        db.session.add(user_who_registered) # Salva as alterações de pontos no usuário
+
+
                     # Lógica para Status 'Fechada com solução'
                     if new_status and new_status.nome == 'Fechada com solução':
                         occurrence.data_finalizacao = datetime.now().date()
@@ -517,7 +549,7 @@ def manage_occurrence(occurrence_id):
             print(f"Erro ao deletar ocorrência: {e}")
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
-# --- NOVA ROTA: Listar e Pesquisar Usuários (para Administrador) ---
+
 @main_bp.route('/users', methods=['GET'])
 @roles_required(['Administrador'])
 def get_all_users():
@@ -547,7 +579,7 @@ def get_all_users():
             'telefone': user.telefone,
             'perfil_id': user.perfil_id,
             'perfil': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.consultar_pontuacao(),
+            'pontos': user.pontos, # Retorna o campo 'pontos'
             'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count,
             'is_blocked': user.is_blocked,
         })
@@ -568,7 +600,7 @@ def manage_user(user_id):
             'telefone': user.telefone,
             'perfil_id': user.perfil_id,
             'perfil_nome': user.perfil.nome if user.perfil else 'N/A',
-            'pontos': user.consultar_pontuacao(),
+            'pontos': user.pontos, # Retorna o campo 'pontos'
             'ocorrencias_recusadas_count': user.ocorrencias_recusadas_count, # Retorna o contador
             'is_blocked': user.is_blocked, # Retorna o status de bloqueio
         }), 200
@@ -599,6 +631,10 @@ def manage_user(user_id):
                 user.is_blocked = bool(data['is_blocked']) # Converte para booleano
             if 'ocorrencias_recusadas_count' in data:
                 user.ocorrencias_recusadas_count = int(data['ocorrencias_recusadas_count'])
+
+            # Permite atualizar a pontuação diretamente via PUT no usuário
+            if 'pontos' in data:
+                user.pontos = int(data['pontos'])
 
 
             db.session.commit()
@@ -729,7 +765,7 @@ def get_ranking_semanal():
         users_with_scores.append({
             'id': user.id,
             'nome': user.nome,
-            'pontos': user.consultar_pontuacao(),
+            'pontos': user.pontos, # Retorna o campo 'pontos'
             'avatar_url': user.avatar_url if hasattr(user, 'avatar_url') else '/avatar.svg',
         })
     

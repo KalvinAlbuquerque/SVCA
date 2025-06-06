@@ -9,7 +9,7 @@ interface UserProfile {
   telefone: string;
   cpf?: string;
   perfil: string;
-  pontos: number;
+  pontos: number; // Já existe, mas reforçando que é o campo direto
   avatar_url?: string; // Se você tiver o avatar_url no banco de dados
 }
 

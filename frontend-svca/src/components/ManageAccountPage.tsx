@@ -12,7 +12,7 @@ interface UserProfile {
   cpf?: string; // Opcional
   apelido: string; // Mapeado para o nome completo ou nome principal
   perfil: string;
-  pontos: number;
+  pontos: number; // Já existe, mas reforçando que é o campo direto do modelo
   avatar_url?: string; // Opcional, se você tiver no modelo
 }
 
