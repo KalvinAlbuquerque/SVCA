@@ -4,28 +4,36 @@ import { useNavigate } from 'react-router-dom';
 
 const RegisterOccurrencePage: React.FC = () => {
   const [titulo, setTitulo] = useState<string>('');
-  const [endereco, setEndereco] = useState<string>('');
+  const [street, setStreet] = useState<string>(''); // Novo campo
+  const [houseNumber, setHouseNumber] = useState<string>(''); // Novo campo
+  const [neighborhood, setNeighborhood] = useState<string>(''); // Novo campo
+  const [city, setCity] = useState<string>(''); // Novo campo
+  const [state, setState] = useState<string>(''); // Novo campo
+  const [postcode, setPostcode] = useState<string>(''); // Novo campo
   const [descricao, setDescricao] = useState<string>('');
   const [imagens, setImagens] = useState<File[]>([]);
-  const [latitude, setLatitude] = useState<number | null>(null); // Novo estado para latitude
-  const [longitude, setLongitude] = useState<number | null>(null); // Novo estado para longitude
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const navigate = useNavigate();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setImagens(prev => [...prev, ...Array.from(e.target.files || [])]);
+      setImagens(Array.from(e.target.files));
     }
   };
 
   const geocodeAddress = async () => {
-    if (!endereco) {
-      setMessage({ type: 'error', text: 'Por favor, insira um endereço para obter as coordenadas.' });
+    // Constrói a string de endereço a partir dos campos separados
+    const fullAddress = `${street}, ${houseNumber}, ${neighborhood}, ${city}, ${state}, ${postcode}`.replace(/,(\s*,)+/g, ',').replace(/^,\s*|,\s*$/g, '');
+
+    if (!fullAddress.trim()) {
+      setMessage({ type: 'error', text: 'Por favor, preencha os campos de endereço para obter as coordenadas.' });
       return;
     }
     try {
       // Usando Nominatim do OpenStreetMap para geocodificação
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(endereco)}`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(fullAddress)}`);
       const data = await response.json();
 
       if (data && data.length > 0) {
@@ -33,7 +41,7 @@ const RegisterOccurrencePage: React.FC = () => {
         setLongitude(parseFloat(data[0].lon));
         setMessage({ type: 'success', text: 'Coordenadas obtidas com sucesso!' });
       } else {
-        setMessage({ type: 'error', text: 'Endereço não encontrado. Por favor, seja mais específico.' });
+        setMessage({ type: 'error', text: 'Endereço não encontrado. Por favor, seja mais específico ou verifique os dados.' });
         setLatitude(null);
         setLongitude(null);
       }
@@ -49,17 +57,20 @@ const RegisterOccurrencePage: React.FC = () => {
     e.preventDefault();
     setMessage(null);
 
-    if (!titulo || !endereco || !descricao || latitude === null || longitude === null) {
-      setMessage({ type: 'error', text: 'Título, Endereço, Descrição e Coordenadas são obrigatórios. Clique em "Obter Coordenadas" após digitar o endereço.' });
+    // Constrói a string de endereço a partir dos campos separados para enviar ao backend
+    const fullAddressForBackend = `${street}, ${houseNumber}, ${neighborhood}, ${city}, ${state}, ${postcode}`.replace(/,(\s*,)+/g, ',').replace(/^,\s*|,\s*$/g, '');
+
+    if (!titulo || !fullAddressForBackend.trim() || !descricao || latitude === null || longitude === null) {
+      setMessage({ type: 'error', text: 'Título, Endereço completo, Descrição e Coordenadas são obrigatórios. Clique em "Obter Coordenadas" após digitar o endereço.' });
       return;
     }
 
     const formData = new FormData();
     formData.append('titulo', titulo);
-    formData.append('endereco', endereco);
+    formData.append('endereco', fullAddressForBackend); // Envia a string completa do endereço
     formData.append('descricao', descricao);
-    formData.append('latitude', latitude.toString()); // Envia a latitude
-    formData.append('longitude', longitude.toString()); // Envia a longitude
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
     
     imagens.forEach((file) => {
       formData.append('imagens', file);
@@ -75,9 +86,14 @@ const RegisterOccurrencePage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: 'success', text: data.message || 'Ocorrência registrada com sucesso!' });
+        setMessage({ type: 'success', text: data.message || 'Ocorrência registrada com sucesso! Aguardando validação do moderador.' });
         setTitulo('');
-        setEndereco('');
+        setStreet(''); // Limpa os novos campos
+        setHouseNumber('');
+        setNeighborhood('');
+        setCity('');
+        setState('');
+        setPostcode('');
         setDescricao('');
         setImagens([]);
         setLatitude(null);
@@ -122,17 +138,87 @@ const RegisterOccurrencePage: React.FC = () => {
               onChange={(e) => setTitulo(e.target.value)}
             />
           </div>
+
+          <div className="form-row"> {/* Novo form-row para campos de endereço */}
+            <div className="form-group">
+              <label htmlFor="street">Rua</label>
+              <input
+                type="text"
+                id="street"
+                name="street"
+                placeholder="Ex: Av. Sete de Setembro"
+                required
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="houseNumber">Número</label>
+              <input
+                type="text"
+                id="houseNumber"
+                name="houseNumber"
+                placeholder="Ex: 123"
+                value={houseNumber}
+                onChange={(e) => setHouseNumber(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="neighborhood">Bairro</label>
+              <input
+                type="text"
+                id="neighborhood"
+                name="neighborhood"
+                placeholder="Ex: Centro"
+                required
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="city">Cidade</label>
+              <input
+                type="text"
+                id="city"
+                name="city"
+                placeholder="Ex: Salvador"
+                required
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="state">Estado</label>
+              <input
+                type="text"
+                id="state"
+                name="state"
+                placeholder="Ex: BA"
+                required
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="postcode">CEP</label>
+              <input
+                type="text"
+                id="postcode"
+                name="postcode"
+                placeholder="Ex: 40000-000"
+                value={postcode}
+                onChange={(e) => setPostcode(e.target.value)}
+              />
+            </div>
+          </div>
+          
           <div className="form-group">
-            <label htmlFor="endereco">Endereço</label>
-            <input
-              type="text"
-              id="endereco"
-              name="endereco"
-              placeholder="Ex: Rua Y, 123 - Bairro Z"
-              required
-              value={endereco}
-              onChange={(e) => setEndereco(e.target.value)}
-            />
             {/* Botão para obter coordenadas */}
             <button type="button" className="btn-primary" onClick={geocodeAddress} style={{ marginTop: '10px' }}>
               Obter Coordenadas do Endereço
