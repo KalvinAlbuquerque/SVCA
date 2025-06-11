@@ -461,12 +461,12 @@ const ViewOccurrencePage: React.FC = () => {
           )}
 
           {/* Seção: Histórico de Notificações */}
-          {canEdit && (
+          {(
             <div className="section-title" style={{marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px'}}>
                 Histórico de Notificações
             </div>
           )}
-          {canEdit && occurrence.historico_notificacoes && occurrence.historico_notificacoes.length > 0 && (
+          {occurrence.historico_notificacoes && occurrence.historico_notificacoes.length > 0 && (
             <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid #ddd', borderRadius: '5px', maxHeight: '200px', overflowY: 'auto' }}>
               {occurrence.historico_notificacoes.map((notif, index) => (
                 <p key={index} style={{ fontSize: '0.9rem', marginBottom: '5px', borderBottom: '1px dashed #eee', paddingBottom: '5px' }}>
@@ -475,7 +475,7 @@ const ViewOccurrencePage: React.FC = () => {
               ))}
             </div>
           )}
-          {canEdit && (!occurrence.historico_notificacoes || occurrence.historico_notificacoes.length === 0) && (
+          {(!occurrence.historico_notificacoes || occurrence.historico_notificacoes.length === 0) && (
             <p style={{textAlign: 'center', color: '#666', marginBottom: '20px'}}>Nenhuma notificação enviada ainda.</p>
           )}
 

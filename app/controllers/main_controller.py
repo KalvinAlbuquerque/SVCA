@@ -17,6 +17,7 @@ from ..decorators import login_required, roles_required
 from flask_mail import Message 
 from .. import mail
 from itsdangerous import BadTimeSignature, SignatureExpired, URLSafeTimedSerializer 
+from sqlalchemy.orm import joinedload # Esta importação está correta!
 
 main_bp = Blueprint('main', __name__)
 
@@ -280,7 +281,7 @@ def user_profile():
 @main_bp.route('/view-occurrence/<int:occurrence_id>', methods=['GET'])
 @login_required
 def view_occurrence_public(occurrence_id):
-    occurrence = Ocorrencia.query.get(occurrence_id)
+    occurrence = Ocorrencia.query.options(joinedload(Ocorrencia.historico_notificacoes)).get(occurrence_id)
     if not occurrence:
         return jsonify({'error': 'Ocorrência não encontrada.'}), 404
 
@@ -297,7 +298,7 @@ def view_occurrence_public(occurrence_id):
     for notificacao in occurrence.historico_notificacoes:
         historico_notificacoes.append({
             'mensagem': notificacao.mensagem,
-            'data_envio': notificacao.data_envio,
+            'data_envio': notificacao.data_envio, # REMOVIDO .strftime()
             'email_destino': notificacao.email_destino
         })
     historico_notificacoes.sort(key=lambda x: x['data_envio'], reverse=True)
@@ -354,7 +355,8 @@ def get_all_occurrences():
 @main_bp.route('/occurrence/<int:occurrence_id>', methods=['GET', 'PUT', 'DELETE'])
 @roles_required(['Administrador', 'Moderador'])
 def manage_occurrence(occurrence_id):
-    occurrence = Ocorrencia.query.get(occurrence_id)
+    # APLICADO joinedload AQUI PARA GARANTIR O CARREGAMENTO DO HISTÓRICO EM TODAS AS OPERAÇÕES DESTA ROTA
+    occurrence = Ocorrencia.query.options(joinedload(Ocorrencia.historico_notificacoes)).get(occurrence_id)
     if not occurrence:
         return jsonify({'error': 'Ocorrência não encontrada.'}), 404
 
@@ -367,6 +369,17 @@ def manage_occurrence(occurrence_id):
         if occurrence.coordenada:
             latitude = occurrence.coordenada.latitude
             longitude = occurrence.coordenada.longitude
+
+        # Constrói o histórico de notificações para a resposta JSON GET
+        historico_notificacoes = []
+        for notificacao in occurrence.historico_notificacoes:
+            historico_notificacoes.append({
+                'mensagem': notificacao.mensagem,
+                'data_envio': notificacao.data_envio, # REMOVIDO .strftime()
+                'email_destino': notificacao.email_destino
+            })
+        historico_notificacoes.sort(key=lambda x: x['data_envio'], reverse=True)
+
 
         return jsonify({
             'id': occurrence.id,
@@ -386,6 +399,7 @@ def manage_occurrence(occurrence_id):
             'latitude': latitude,
             'longitude': longitude,
             'justificativa_recusa': occurrence.justificativa_recusa,
+            'historico_notificacoes': historico_notificacoes, # ADICIONADO AO JSON DE RESPOSTA
         }), 200
 
     elif request.method == 'PUT':
@@ -516,6 +530,7 @@ def manage_occurrence(occurrence_id):
         except Exception as e:
             db.session.rollback()
             print(f"Erro ao deletar ocorrência: {e}")
+
             return jsonify({'error': f'Erro ao deletar ocorrência: {str(e)}'}), 500
 
 @main_bp.route('/users', methods=['GET'])
@@ -773,6 +788,7 @@ def get_active_occurrences():
 @main_bp.route('/occurrence/<int:occurrence_id>/send-notification', methods=['POST'])
 @roles_required(['Administrador', 'Moderador'])
 def send_notification_to_orgao(occurrence_id):
+
     occurrence = Ocorrencia.query.get(occurrence_id)
     if not occurrence:
         return jsonify({'error': 'Ocorrência não encontrada.'}), 404
