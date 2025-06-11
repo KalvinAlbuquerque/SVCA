@@ -147,7 +147,7 @@ def register_occurrence():
         uploaded_images = []
         if 'imagens' in request.files:
             files = request.files.getlist('imagens') 
-            UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'ocorrencias')
+            UPLOAD_FOLDER = os.path.join(current_app.root_path, 'static', 'uploads', 'ocorrencias')
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
             for file in files:
