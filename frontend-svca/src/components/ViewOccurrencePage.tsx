@@ -207,7 +207,43 @@ const ViewOccurrencePage: React.FC = () => {
   };
 
   // ... (handleSendNotification como está) ...
-  const handleSendNotification = async () => { /* ... */ };
+  const handleSendNotification = async () => {
+  setMessage(null); // Limpa mensagens anteriores
+  setError(null);   // Limpa erros anteriores
+
+  if (!occurrence) {
+    setMessage({ type: 'error', text: 'Ocorrência não carregada.' });
+    return;
+  }
+
+  // Desabilitar o botão temporariamente para evitar cliques múltiplos
+  // (O `isSendNotificationDisabled` já faz isso, mas é bom ter uma flag de loading interna se quiser)
+
+  try {
+    const response = await fetch(`http://localhost:5000/occurrence/${occurrence.id}/send-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', // Se o backend espera JSON no body (não é o caso aqui, mas boa prática)
+      },
+      credentials: 'include', // Para enviar o cookie de sessão com o JWT
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setMessage({ type: 'success', text: data.message || 'Notificação enviada com sucesso!' });
+      // Recarrega os detalhes da ocorrência para atualizar o histórico de notificações
+      fetchOccurrenceDetails();
+      setTimeout(() => setMessage(null), 3000); // Limpa a mensagem após 3 segundos
+    } else {
+      setMessage({ type: 'error', text: data.error || 'Erro ao enviar notificação.' });
+    }
+  } catch (err: any) {
+    console.error("Erro na requisição de envio de notificação:", err);
+    setMessage({ type: 'error', text: 'Erro ao conectar ao servidor para enviar notificação. Tente novamente mais tarde.' });
+  }
+};
+
 
 
   if (loading) {
